@@ -4,1111 +4,770 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>WEBVTEC — AI Business OS</title>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
-
-  :root {
-    --bg: #0a0a0f;
-    --bg2: #111118;
-    --bg3: #1a1a24;
-    --border: #2a2a3a;
-    --accent: #7c5cfc;
-    --accent2: #5c9cfc;
-    --green: #22c55e;
-    --red: #ef4444;
-    --yellow: #f59e0b;
-    --text: #e8e8f0;
-    --muted: #6b6b80;
-    --card: #13131c;
-  }
-
-  * { margin:0; padding:0; box-sizing:border-box; }
-
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'Inter', sans-serif;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-  }
-
-  /* TOP NAV */
-  nav {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 24px;
-    height: 56px;
-    background: var(--bg2);
-    border-bottom: 1px solid var(--border);
-    position: sticky;
-    top: 0;
-    z-index: 100;
-  }
-
-  .logo {
-    font-weight: 700;
-    font-size: 16px;
-    letter-spacing: 2px;
-    background: linear-gradient(135deg, var(--accent), var(--accent2));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-  }
-
-  .nav-right { display: flex; gap: 8px; align-items: center; }
-
-  .badge {
-    font-size: 11px;
-    padding: 3px 10px;
-    border-radius: 20px;
-    font-weight: 500;
-  }
-
-  .badge-purple { background: rgba(124,92,252,0.15); color: var(--accent); border: 1px solid rgba(124,92,252,0.3); }
-  .badge-green { background: rgba(34,197,94,0.15); color: var(--green); border: 1px solid rgba(34,197,94,0.3); }
-  .badge-red { background: rgba(239,68,68,0.15); color: var(--red); border: 1px solid rgba(239,68,68,0.3); }
-  .badge-yellow { background: rgba(245,158,11,0.15); color: var(--yellow); border: 1px solid rgba(245,158,11,0.3); }
-
-  /* LAYOUT */
-  .app { display: flex; flex: 1; overflow: hidden; height: calc(100vh - 56px); }
-
-  /* SIDEBAR */
-  aside {
-    width: 220px;
-    background: var(--bg2);
-    border-right: 1px solid var(--border);
-    display: flex;
-    flex-direction: column;
-    flex-shrink: 0;
-    overflow-y: auto;
-  }
-
-  .sidebar-section { padding: 16px 12px 8px; }
-  .sidebar-label { font-size: 10px; font-weight: 600; color: var(--muted); letter-spacing: 1.5px; text-transform: uppercase; padding: 0 8px; margin-bottom: 4px; }
-
-  .nav-item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 8px 12px;
-    border-radius: 8px;
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--muted);
-    cursor: pointer;
-    transition: all 0.15s;
-    border: none;
-    background: none;
-    width: 100%;
-    text-align: left;
-  }
-
-  .nav-item:hover { background: var(--bg3); color: var(--text); }
-  .nav-item.active { background: rgba(124,92,252,0.15); color: var(--accent); }
-  .nav-item .icon { font-size: 16px; width: 20px; text-align: center; }
-
-  .client-count {
-    margin-left: auto;
-    font-size: 10px;
-    background: var(--bg3);
-    padding: 2px 7px;
-    border-radius: 10px;
-    color: var(--muted);
-  }
-
-  /* MAIN */
-  main { flex: 1; overflow-y: auto; padding: 24px; }
-
-  /* VIEWS */
-  .view { display: none; }
-  .view.active { display: block; }
-
-  /* PAGE HEADER */
-  .page-header { margin-bottom: 24px; }
-  .page-title { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
-  .page-sub { font-size: 13px; color: var(--muted); }
-
-  /* CARDS */
-  .card {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 20px;
-    margin-bottom: 16px;
-  }
-
-  .card-title { font-size: 13px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 16px; }
-
-  /* STATS ROW */
-  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
-  .stat { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px 20px; }
-  .stat-val { font-size: 28px; font-weight: 700; line-height: 1; margin-bottom: 4px; }
-  .stat-label { font-size: 12px; color: var(--muted); }
-  .stat-val.purple { color: var(--accent); }
-  .stat-val.green { color: var(--green); }
-  .stat-val.blue { color: var(--accent2); }
-  .stat-val.yellow { color: var(--yellow); }
-
-  /* PROMPT BOX */
-  .prompt-area {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 16px;
-    margin-bottom: 20px;
-  }
-
-  .prompt-label { font-size: 12px; color: var(--muted); margin-bottom: 10px; font-weight: 500; }
-
-  .prompt-input-row { display: flex; gap: 10px; }
-
-  .prompt-input {
-    flex: 1;
-    background: var(--bg3);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 12px 16px;
-    color: var(--text);
-    font-size: 14px;
-    font-family: 'Inter', sans-serif;
-    outline: none;
-    transition: border 0.2s;
-  }
-
-  .prompt-input:focus { border-color: var(--accent); }
-  .prompt-input::placeholder { color: var(--muted); }
-
-  .btn {
-    padding: 10px 20px;
-    border-radius: 8px;
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    border: none;
-    transition: all 0.2s;
-    font-family: 'Inter', sans-serif;
-  }
-
-  .btn-primary { background: var(--accent); color: white; }
-  .btn-primary:hover { background: #6a4de8; }
-  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
-  .btn-secondary { background: var(--bg3); color: var(--text); border: 1px solid var(--border); }
-  .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
-  .btn-danger { background: rgba(239,68,68,0.15); color: var(--red); border: 1px solid rgba(239,68,68,0.3); }
-
-  /* AI RESPONSE */
-  #ai-response {
-    margin-top: 14px;
-    font-size: 13px;
-    line-height: 1.7;
-    color: var(--text);
-    display: none;
-  }
-
-  #ai-response.visible { display: block; }
-
-  .ai-msg {
-    background: var(--bg3);
-    border: 1px solid var(--border);
-    border-left: 3px solid var(--accent);
-    border-radius: 8px;
-    padding: 14px 16px;
-    font-size: 13px;
-    line-height: 1.7;
-    white-space: pre-wrap;
-  }
-
-  /* PROGRESS STEPS */
-  .progress-steps { display: flex; flex-direction: column; gap: 8px; margin-top: 14px; }
-
-  .step-row {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 10px 14px;
-    background: var(--bg3);
-    border-radius: 8px;
-    border: 1px solid var(--border);
-    font-size: 13px;
-    transition: all 0.3s;
-  }
-
-  .step-row.done { border-color: rgba(34,197,94,0.3); background: rgba(34,197,94,0.05); }
-  .step-row.active { border-color: rgba(124,92,252,0.4); background: rgba(124,92,252,0.07); }
-
-  .step-dot {
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 11px;
-    font-weight: 600;
-    flex-shrink: 0;
-  }
-
-  .dot-pending { background: var(--bg); border: 1px solid var(--border); color: var(--muted); }
-  .dot-active { background: rgba(124,92,252,0.2); border: 1px solid var(--accent); color: var(--accent); }
-  .dot-done { background: rgba(34,197,94,0.2); border: 1px solid var(--green); color: var(--green); }
-
-  .step-text { flex: 1; }
-  .step-name { font-weight: 500; }
-  .step-detail { font-size: 11px; color: var(--muted); margin-top: 1px; }
-
-  /* CLIENTS TABLE */
-  .clients-table { width: 100%; border-collapse: collapse; }
-  .clients-table th {
-    text-align: left;
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--muted);
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    padding: 10px 16px;
-    border-bottom: 1px solid var(--border);
-  }
-
-  .clients-table td {
-    padding: 14px 16px;
-    font-size: 13px;
-    border-bottom: 1px solid var(--border);
-    vertical-align: middle;
-  }
-
-  .clients-table tr:last-child td { border-bottom: none; }
-  .clients-table tr:hover td { background: var(--bg3); }
-
-  .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; }
-  .dot-green { background: var(--green); box-shadow: 0 0 6px var(--green); }
-  .dot-yellow { background: var(--yellow); }
-  .dot-red { background: var(--red); }
-
-  .action-btns { display: flex; gap: 6px; }
-  .action-btn {
-    padding: 5px 12px;
-    border-radius: 6px;
-    font-size: 11px;
-    font-weight: 500;
-    cursor: pointer;
-    border: 1px solid var(--border);
-    background: var(--bg3);
-    color: var(--muted);
-    transition: all 0.15s;
-    font-family: 'Inter', sans-serif;
-  }
-  .action-btn:hover { color: var(--accent); border-color: var(--accent); }
-  .action-btn.danger:hover { color: var(--red); border-color: var(--red); }
-
-  /* SETTINGS */
-  .settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-  .setting-group { margin-bottom: 16px; }
-  .setting-label { font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 6px; display: block; }
-  .setting-input {
-    width: 100%;
-    background: var(--bg3);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 10px 14px;
-    color: var(--text);
-    font-size: 13px;
-    font-family: 'JetBrains Mono', monospace;
-    outline: none;
-    transition: border 0.2s;
-  }
-  .setting-input:focus { border-color: var(--accent); }
-  .setting-input::placeholder { color: var(--muted); }
-
-  .save-status { font-size: 12px; color: var(--green); margin-top: 8px; display: none; }
-
-  /* EMPTY STATE */
-  .empty {
-    text-align: center;
-    padding: 60px 20px;
-    color: var(--muted);
-  }
-  .empty-icon { font-size: 40px; margin-bottom: 12px; }
-  .empty-title { font-size: 16px; font-weight: 600; color: var(--text); margin-bottom: 6px; }
-  .empty-sub { font-size: 13px; }
-
-  /* QUICK PROMPTS */
-  .quick-prompts { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
-  .quick-btn {
-    padding: 6px 14px;
-    border-radius: 20px;
-    font-size: 12px;
-    font-weight: 500;
-    cursor: pointer;
-    border: 1px solid var(--border);
-    background: var(--bg3);
-    color: var(--muted);
-    transition: all 0.15s;
-    font-family: 'Inter', sans-serif;
-  }
-  .quick-btn:hover { border-color: var(--accent); color: var(--accent); }
-
-  /* LOGS */
-  .log-entry {
-    display: flex;
-    gap: 12px;
-    padding: 10px 0;
-    border-bottom: 1px solid var(--border);
-    font-size: 12px;
-  }
-  .log-time { color: var(--muted); font-family: 'JetBrains Mono', monospace; flex-shrink: 0; }
-  .log-msg { color: var(--text); }
-  .log-tag { flex-shrink: 0; }
-
-  /* MODAL */
-  .modal-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.7);
-    z-index: 200;
-    display: none;
-    align-items: center;
-    justify-content: center;
-  }
-  .modal-overlay.open { display: flex; }
-  .modal {
-    background: var(--bg2);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 28px;
-    width: 500px;
-    max-width: 90vw;
-  }
-  .modal-title { font-size: 18px; font-weight: 700; margin-bottom: 6px; }
-  .modal-sub { font-size: 13px; color: var(--muted); margin-bottom: 20px; }
-  .modal-footer { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
-
-  /* SCROLLBAR */
-  ::-webkit-scrollbar { width: 4px; height: 4px; }
-  ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
-
-  /* SPINNER */
-  @keyframes spin { to { transform: rotate(360deg); } }
-  .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.2); border-top-color: white; border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; margin-right: 6px; }
-
-  /* PULSE */
-  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
-  .pulsing { animation: pulse 1.5s ease-in-out infinite; }
-
-  /* RESPONSIVE */
-  @media(max-width: 768px) {
-    aside { display: none; }
-    .stats { grid-template-columns: repeat(2,1fr); }
-    .settings-grid { grid-template-columns: 1fr; }
-  }
+:root{--bg:#0a0a0f;--bg2:#111118;--bg3:#1a1a24;--border:#2a2a3a;--accent:#7c5cfc;--accent2:#5c9cfc;--green:#22c55e;--red:#ef4444;--yellow:#f59e0b;--text:#e8e8f0;--muted:#6b6b80;--card:#13131c;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-serif;min-height:100vh;}
+/* LOGIN */
+#login-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;}
+.login-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:40px;text-align:center;width:340px;}
+.login-logo{font-size:26px;font-weight:800;letter-spacing:3px;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:6px;}
+.login-sub{color:var(--muted);font-size:13px;margin-bottom:28px;line-height:1.5;}
+.google-btn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:12px;background:white;color:#333;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;}
+.google-btn:hover{background:#f0f0f0;}
+.login-err{color:var(--red);font-size:12px;margin-top:10px;display:none;}
+/* APP */
+#app-screen{display:none;flex-direction:column;min-height:100vh;}
+nav{display:flex;align-items:center;justify-content:space-between;padding:0 24px;height:56px;background:var(--bg2);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;}
+.logo{font-weight:800;font-size:15px;letter-spacing:2px;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.nav-right{display:flex;gap:8px;align-items:center;}
+.badge{font-size:11px;padding:3px 10px;border-radius:20px;font-weight:500;}
+.bp{background:rgba(124,92,252,0.15);color:var(--accent);border:1px solid rgba(124,92,252,0.3);}
+.bg{background:rgba(34,197,94,0.15);color:var(--green);border:1px solid rgba(34,197,94,0.3);}
+.user-av{width:30px;height:30px;border-radius:50%;cursor:pointer;border:2px solid var(--border);}
+.app-body{display:flex;flex:1;height:calc(100vh - 56px);}
+aside{width:210px;background:var(--bg2);border-right:1px solid var(--border);flex-shrink:0;overflow-y:auto;}
+.ss{padding:16px 12px 8px;}
+.sl{font-size:10px;font-weight:600;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;padding:0 8px;margin-bottom:4px;}
+.ni{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;border:none;background:none;width:100%;text-align:left;transition:all 0.15s;}
+.ni:hover{background:var(--bg3);color:var(--text);}
+.ni.active{background:rgba(124,92,252,0.15);color:var(--accent);}
+.ni .ic{font-size:15px;width:20px;text-align:center;}
+.cc{margin-left:auto;font-size:10px;background:var(--bg3);padding:2px 7px;border-radius:10px;color:var(--muted);}
+main{flex:1;overflow-y:auto;padding:24px;}
+.view{display:none;}.view.active{display:block;}
+.ph{margin-bottom:24px;}.pt{font-size:22px;font-weight:700;margin-bottom:4px;}.ps{font-size:13px;color:var(--muted);}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;}
+.stat{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 20px;}
+.sv{font-size:28px;font-weight:700;line-height:1;margin-bottom:4px;}
+.sl2{font-size:12px;color:var(--muted);}
+.c1{color:var(--accent);}.c2{color:var(--green);}.c3{color:var(--accent2);}.c4{color:var(--yellow);}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:16px;}
+.ct{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:16px;}
+.pa{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:20px;}
+.pl{font-size:12px;color:var(--muted);margin-bottom:10px;font-weight:500;}
+.pir{display:flex;gap:10px;}
+.pi{flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px 16px;color:var(--text);font-size:14px;font-family:inherit;outline:none;transition:border 0.2s;}
+.pi:focus{border-color:var(--accent);}
+.pi::placeholder{color:var(--muted);}
+.btn{padding:10px 20px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:none;transition:all 0.2s;font-family:inherit;}
+.bp2{background:var(--accent);color:white;}.bp2:hover{background:#6a4de8;}.bp2:disabled{opacity:0.5;cursor:not-allowed;}
+.bs{background:var(--bg3);color:var(--text);border:1px solid var(--border);}.bs:hover{border-color:var(--accent);color:var(--accent);}
+.bsm{padding:5px 12px;font-size:11px;border-radius:6px;}
+.ai-msg{background:var(--bg3);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:8px;padding:14px 16px;font-size:13px;line-height:1.7;white-space:pre-wrap;margin-top:12px;}
+.qp{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;}
+.qb{padding:6px 14px;border-radius:20px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid var(--border);background:var(--bg3);color:var(--muted);transition:all 0.15s;font-family:inherit;}
+.qb:hover{border-color:var(--accent);color:var(--accent);}
+.steps{display:flex;flex-direction:column;gap:8px;margin-top:14px;}
+.sr{display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--bg3);border-radius:8px;border:1px solid var(--border);font-size:13px;transition:all 0.3s;}
+.sr.done{border-color:rgba(34,197,94,0.3);background:rgba(34,197,94,0.05);}
+.sr.act{border-color:rgba(124,92,252,0.4);background:rgba(124,92,252,0.07);}
+.sd{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0;}
+.dp{background:var(--bg);border:1px solid var(--border);color:var(--muted);}
+.da{background:rgba(124,92,252,0.2);border:1px solid var(--accent);color:var(--accent);}
+.dd{background:rgba(34,197,94,0.2);border:1px solid var(--green);color:var(--green);}
+.st{flex:1;}.sn{font-weight:500;}.sd2{font-size:11px;color:var(--muted);margin-top:1px;}
+.tbl{width:100%;border-collapse:collapse;}
+.tbl th{text-align:left;font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:1px;padding:10px 16px;border-bottom:1px solid var(--border);}
+.tbl td{padding:14px 16px;font-size:13px;border-bottom:1px solid var(--border);vertical-align:middle;}
+.tbl tr:last-child td{border-bottom:none;}
+.tbl tr:hover td{background:var(--bg3);}
+.sdot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:6px;}
+.sg{background:var(--green);box-shadow:0 0 6px var(--green);}
+.abs{display:flex;gap:6px;}
+.ab{padding:5px 12px;border-radius:6px;font-size:11px;font-weight:500;cursor:pointer;border:1px solid var(--border);background:var(--bg3);color:var(--muted);transition:all 0.15s;font-family:inherit;}
+.ab:hover{color:var(--accent);border-color:var(--accent);}
+.ab.d:hover{color:var(--red);border-color:var(--red);}
+.lc{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:10px;}
+.ln{font-weight:600;font-size:14px;margin-bottom:4px;}
+.lm{font-size:12px;color:var(--muted);display:flex;gap:12px;flex-wrap:wrap;}
+.ls{font-size:11px;padding:2px 8px;border-radius:10px;font-weight:500;}
+.snew{background:rgba(124,92,252,0.15);color:var(--accent);}
+.sbook{background:rgba(34,197,94,0.15);color:var(--green);}
+.scon{background:rgba(245,158,11,0.15);color:var(--yellow);}
+.log-e{display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);font-size:12px;}
+.log-t{color:var(--muted);font-family:monospace;flex-shrink:0;}
+.empty{text-align:center;padding:50px 20px;color:var(--muted);}
+.ei{font-size:36px;margin-bottom:12px;}.et{font-size:15px;font-weight:600;color:var(--text);margin-bottom:6px;}.es{font-size:13px;}
+.sg2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.slb{font-size:12px;font-weight:600;color:var(--muted);margin-bottom:6px;display:block;}
+.si{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-size:13px;font-family:monospace;outline:none;}
+.si:focus{border-color:var(--accent);}
+.ks{font-size:12px;padding:8px 12px;border-radius:8px;background:var(--bg3);border:1px solid var(--border);}
+.mo{position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:200;display:none;align-items:center;justify-content:center;}
+.mo.open{display:flex;}
+.md{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:28px;width:500px;max-width:90vw;}
+.mt{font-size:17px;font-weight:700;margin-bottom:6px;}.ms{font-size:13px;color:var(--muted);margin-bottom:18px;}
+.mf{display:flex;gap:10px;justify-content:flex-end;margin-top:18px;}
+.mi{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-size:13px;font-family:inherit;outline:none;}
+.mi:focus{border-color:var(--accent);}
+@keyframes spin{to{transform:rotate(360deg);}}
+.sp{display:inline-block;width:13px;height:13px;border:2px solid rgba(255,255,255,0.2);border-top-color:white;border-radius:50%;animation:spin 0.7s linear infinite;vertical-align:middle;margin-right:6px;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+.pu{animation:pulse 1.5s ease-in-out infinite;}
+::-webkit-scrollbar{width:4px;}::-webkit-scrollbar-track{background:transparent;}::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px;}
+@media(max-width:768px){aside{display:none;}.stats{grid-template-columns:repeat(2,1fr);}.sg2{grid-template-columns:1fr;}}
 </style>
 </head>
 <body>
 
-<!-- NAV -->
-<nav>
-  <div class="logo">WEBVTEC</div>
-  <div class="nav-right">
-    <span class="badge badge-purple" id="ai-status">⚡ Claude AI Ready</span>
-    <span class="badge badge-green" id="client-badge">0 Clients</span>
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">WEBVTEC</div>
+    <div class="login-sub">AI Business Operating System<br>Powered by Claude AI</div>
+    <button class="google-btn" onclick="signInGoogle()">
+      <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+      Continue with Google
+    </button>
+    <div class="login-err" id="lerr">Sign in failed. Please try again.</div>
   </div>
-</nav>
-
-<div class="app">
-
-  <!-- SIDEBAR -->
-  <aside>
-    <div class="sidebar-section">
-      <div class="sidebar-label">Main</div>
-      <button class="nav-item active" onclick="showView('dashboard')">
-        <span class="icon">🏠</span> Dashboard
-      </button>
-      <button class="nav-item" onclick="showView('setup')">
-        <span class="icon">⚡</span> New Client
-      </button>
-      <button class="nav-item" onclick="showView('clients')">
-        <span class="icon">🏥</span> Clients
-        <span class="client-count" id="sidebar-count">0</span>
-      </button>
-    </div>
-    <div class="sidebar-section">
-      <div class="sidebar-label">Manage</div>
-      <button class="nav-item" onclick="showView('edit')">
-        <span class="icon">✏️</span> Edit Client
-      </button>
-      <button class="nav-item" onclick="showView('logs')">
-        <span class="icon">📋</span> Activity Log
-      </button>
-    </div>
-    <div class="sidebar-section">
-      <div class="sidebar-label">System</div>
-      <button class="nav-item" onclick="showView('settings')">
-        <span class="icon">🔑</span> API Keys
-      </button>
-    </div>
-  </aside>
-
-  <!-- MAIN CONTENT -->
-  <main>
-
-    <!-- DASHBOARD -->
-    <div class="view active" id="view-dashboard">
-      <div class="page-header">
-        <div class="page-title">Good morning, WEBVTEC 👋</div>
-        <div class="page-sub">Your AI automation business at a glance</div>
-      </div>
-
-      <div class="stats">
-        <div class="stat">
-          <div class="stat-val purple" id="stat-clients">0</div>
-          <div class="stat-label">Active Clients</div>
-        </div>
-        <div class="stat">
-          <div class="stat-val green" id="stat-mrr">$0</div>
-          <div class="stat-label">Monthly Revenue</div>
-        </div>
-        <div class="stat">
-          <div class="stat-val blue" id="stat-leads">0</div>
-          <div class="stat-label">Total Leads Captured</div>
-        </div>
-        <div class="stat">
-          <div class="stat-val yellow" id="stat-profit">$0</div>
-          <div class="stat-label">Monthly Profit</div>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="card-title">Quick Actions</div>
-        <div class="quick-prompts">
-          <button class="quick-btn" onclick="quickPrompt('Add new dental client')">➕ New Dental Client</button>
-          <button class="quick-btn" onclick="quickPrompt('Show me all active clients')">📋 View All Clients</button>
-          <button class="quick-btn" onclick="quickPrompt('Generate weekly report')">📊 Weekly Report</button>
-          <button class="quick-btn" onclick="quickPrompt('Check system status')">🔍 System Status</button>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="card-title">Recent Activity</div>
-        <div id="dashboard-logs">
-          <div class="empty">
-            <div class="empty-icon">📭</div>
-            <div class="empty-title">No activity yet</div>
-            <div class="empty-sub">Set up your first client to get started</div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- NEW CLIENT SETUP -->
-    <div class="view" id="view-setup">
-      <div class="page-header">
-        <div class="page-title">⚡ New Client Setup</div>
-        <div class="page-sub">Describe your client and AI will set up everything automatically</div>
-      </div>
-
-      <div class="prompt-area">
-        <div class="prompt-label">Tell the AI about your new client</div>
-        <div class="quick-prompts">
-          <button class="quick-btn" onclick="fillPrompt('New dental client: Kingston Smile Dental, Dr. Brown, Kingston Jamaica, WhatsApp +18761234567')">🦷 Dental Clinic</button>
-          <button class="quick-btn" onclick="fillPrompt('New law firm client: Brown & Associates, Mr. Brown, Kingston Jamaica, WhatsApp +18761234567')">⚖️ Law Firm</button>
-          <button class="quick-btn" onclick="fillPrompt('New medical clinic client: Kingston Medical Centre, Dr. Williams, Kingston Jamaica, WhatsApp +18761234567')">🏥 Medical Clinic</button>
-        </div>
-        <div class="prompt-input-row">
-          <input class="prompt-input" id="setup-input" placeholder="e.g. New client: Kingston Smile Dental, Dr Brown, Kingston Jamaica, +18761234567" />
-          <button class="btn btn-primary" onclick="runSetup()" id="setup-btn">⚡ Set Up Client</button>
-        </div>
-        <div id="ai-response"></div>
-      </div>
-
-      <div class="card" id="setup-steps-card" style="display:none">
-        <div class="card-title">Setup Progress</div>
-        <div class="progress-steps" id="setup-steps">
-          <div class="step-row" id="step-firebase">
-            <div class="step-dot dot-pending" id="dot-firebase">1</div>
-            <div class="step-text">
-              <div class="step-name">Firebase Database</div>
-              <div class="step-detail">Creating client collection and lead schema</div>
-            </div>
-            <span id="status-firebase"></span>
-          </div>
-          <div class="step-row" id="step-retell">
-            <div class="step-dot dot-pending" id="dot-retell">2</div>
-            <div class="step-text">
-              <div class="step-name">Retell AI Phone Agent</div>
-              <div class="step-detail">Building AI agent with custom clinic script</div>
-            </div>
-            <span id="status-retell"></span>
-          </div>
-          <div class="step-row" id="step-twilio">
-            <div class="step-dot dot-pending" id="dot-twilio">3</div>
-            <div class="step-text">
-              <div class="step-name">Twilio Phone & WhatsApp</div>
-              <div class="step-detail">Configuring call forwarding and WhatsApp</div>
-            </div>
-            <span id="status-twilio"></span>
-          </div>
-          <div class="step-row" id="step-n8n">
-            <div class="step-dot dot-pending" id="dot-n8n">4</div>
-            <div class="step-text">
-              <div class="step-name">n8n Follow-up Workflows</div>
-              <div class="step-detail">SMS, WhatsApp, email sequences</div>
-            </div>
-            <span id="status-n8n"></span>
-          </div>
-          <div class="step-row" id="step-website">
-            <div class="step-dot dot-pending" id="dot-website">5</div>
-            <div class="step-text">
-              <div class="step-name">Website Files</div>
-              <div class="step-detail">Generating ready-to-deploy website</div>
-            </div>
-            <span id="status-website"></span>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- CLIENTS LIST -->
-    <div class="view" id="view-clients">
-      <div class="page-header">
-        <div class="page-title">🏥 Active Clients</div>
-        <div class="page-sub">All clients managed by your system</div>
-      </div>
-      <div class="card">
-        <div id="clients-container">
-          <div class="empty">
-            <div class="empty-icon">🏥</div>
-            <div class="empty-title">No clients yet</div>
-            <div class="empty-sub">Go to New Client to add your first one</div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- EDIT CLIENT -->
-    <div class="view" id="view-edit">
-      <div class="page-header">
-        <div class="page-title">✏️ Edit Client</div>
-        <div class="page-sub">Make changes to any existing client's setup</div>
-      </div>
-
-      <div class="prompt-area">
-        <div class="prompt-label">Describe what you want to change</div>
-        <div class="quick-prompts">
-          <button class="quick-btn" onclick="fillEditPrompt('Change follow-up timing for [client name] from 2 days to 1 day')">⏱ Change Follow-up Timing</button>
-          <button class="quick-btn" onclick="fillEditPrompt('Update AI agent greeting for [client name]')">🤖 Update AI Script</button>
-          <button class="quick-btn" onclick="fillEditPrompt('Pause all automation for [client name]')">⏸ Pause Client</button>
-          <button class="quick-btn" onclick="fillEditPrompt('Add WhatsApp outbound calls to [client name]')">📱 Add WhatsApp Calls</button>
-        </div>
-        <div class="prompt-input-row">
-          <input class="prompt-input" id="edit-input" placeholder="e.g. Update Kingston Smile Dental — change follow-up to 1 day" />
-          <button class="btn btn-primary" onclick="runEdit()" id="edit-btn">✏️ Apply Changes</button>
-        </div>
-        <div id="edit-response"></div>
-      </div>
-    </div>
-
-    <!-- ACTIVITY LOG -->
-    <div class="view" id="view-logs">
-      <div class="page-header">
-        <div class="page-title">📋 Activity Log</div>
-        <div class="page-sub">Everything your system has done</div>
-      </div>
-      <div class="card">
-        <div id="logs-container">
-          <div class="empty">
-            <div class="empty-icon">📋</div>
-            <div class="empty-title">No activity yet</div>
-            <div class="empty-sub">Actions will appear here as you use the system</div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- SETTINGS -->
-    <div class="view" id="view-settings">
-      <div class="page-header">
-        <div class="page-title">🔑 API Keys</div>
-        <div class="page-sub">Your keys are stored locally in your browser. Never shared.</div>
-      </div>
-
-      <div class="card">
-        <div class="card-title">AI & Automation</div>
-        <div class="settings-grid">
-          <div class="setting-group">
-            <label class="setting-label">Anthropic API Key (Claude)</label>
-            <input class="setting-input" id="key-anthropic" type="password" placeholder="sk-ant-..." />
-          </div>
-          <div class="setting-group">
-            <label class="setting-label">n8n Instance URL</label>
-            <input class="setting-input" id="key-n8n-url" type="text" placeholder="https://yourworkspace.app.n8n.cloud" />
-          </div>
-          <div class="setting-group">
-            <label class="setting-label">n8n API Key</label>
-            <input class="setting-input" id="key-n8n" type="password" placeholder="n8n_api_..." />
-          </div>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="card-title">Communications</div>
-        <div class="settings-grid">
-          <div class="setting-group">
-            <label class="setting-label">Twilio Account SID</label>
-            <input class="setting-input" id="key-twilio-sid" type="password" placeholder="ACxxxxxxxxxx" />
-          </div>
-          <div class="setting-group">
-            <label class="setting-label">Twilio Auth Token</label>
-            <input class="setting-input" id="key-twilio-token" type="password" placeholder="xxxxxxxxxx" />
-          </div>
-          <div class="setting-group">
-            <label class="setting-label">Retell AI API Key</label>
-            <input class="setting-input" id="key-retell" type="password" placeholder="key_..." />
-          </div>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="card-title">Database</div>
-        <div class="settings-grid">
-          <div class="setting-group">
-            <label class="setting-label">Airtable Personal Access Token</label>
-            <input class="setting-input" id="key-airtable" type="password" placeholder="pat_..." />
-          </div>
-          <div class="setting-group">
-            <label class="setting-label">Firebase Project ID</label>
-            <input class="setting-input" id="key-firebase-id" type="text" placeholder="webvtec-xxxxx" />
-          </div>
-          <div class="setting-group">
-            <label class="setting-label">Firebase API Key</label>
-            <input class="setting-input" id="key-firebase-api" type="password" placeholder="AIzaSy..." />
-          </div>
-        </div>
-      </div>
-
-      <button class="btn btn-primary" onclick="saveKeys()">💾 Save All Keys</button>
-      <div class="save-status" id="save-status">✅ Keys saved securely</div>
-    </div>
-
-  </main>
 </div>
 
-<!-- EDIT MODAL -->
-<div class="modal-overlay" id="edit-modal">
-  <div class="modal">
-    <div class="modal-title" id="modal-title">Edit Client</div>
-    <div class="modal-sub" id="modal-sub">Make changes to this client's configuration</div>
-    <div class="setting-group">
-      <label class="setting-label">What do you want to change?</label>
-      <input class="setting-input" id="modal-input" placeholder="Describe the change..." style="font-family:'Inter',sans-serif" />
+<!-- APP -->
+<div id="app-screen">
+  <nav>
+    <div class="logo">WEBVTEC</div>
+    <div class="nav-right">
+      <span class="badge bp" id="ai-badge">⚡ AI Ready</span>
+      <span class="badge bg" id="cl-badge">0 Clients</span>
+      <img class="user-av" id="uav" src="" alt="user" onclick="signOut()" title="Click to sign out"/>
     </div>
-    <div id="modal-response" style="margin-top:12px;font-size:13px;color:var(--muted);display:none"></div>
-    <div class="modal-footer">
-      <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
-      <button class="btn btn-primary" onclick="applyModalEdit()" id="modal-btn">Apply Change</button>
+  </nav>
+  <div class="app-body">
+    <aside>
+      <div class="ss">
+        <div class="sl">Main</div>
+        <button class="ni active" onclick="sv('dashboard',this)"><span class="ic">🏠</span>Dashboard</button>
+        <button class="ni" onclick="sv('setup',this)"><span class="ic">⚡</span>New Client</button>
+        <button class="ni" onclick="sv('clients',this)"><span class="ic">🏥</span>Clients<span class="cc" id="scc">0</span></button>
+        <button class="ni" onclick="sv('leads',this)"><span class="ic">📥</span>Leads</button>
+      </div>
+      <div class="ss">
+        <div class="sl">Manage</div>
+        <button class="ni" onclick="sv('edit',this)"><span class="ic">✏️</span>Edit Client</button>
+        <button class="ni" onclick="sv('logs',this)"><span class="ic">📋</span>Activity</button>
+      </div>
+      <div class="ss">
+        <div class="sl">System</div>
+        <button class="ni" onclick="sv('settings',this)"><span class="ic">⚙️</span>Settings</button>
+      </div>
+    </aside>
+    <main>
+
+      <!-- DASHBOARD -->
+      <div class="view active" id="view-dashboard">
+        <div class="ph"><div class="pt" id="greet">Good day 👋</div><div class="ps">Your AI automation business at a glance</div></div>
+        <div class="stats">
+          <div class="stat"><div class="sv c1" id="s1">0</div><div class="sl2">Active Clients</div></div>
+          <div class="stat"><div class="sv c2" id="s2">$0</div><div class="sl2">Monthly Revenue</div></div>
+          <div class="stat"><div class="sv c3" id="s3">0</div><div class="sl2">Total Leads</div></div>
+          <div class="stat"><div class="sv c4" id="s4">$0</div><div class="sl2">Monthly Profit</div></div>
+        </div>
+        <div class="card">
+          <div class="ct">Quick Actions</div>
+          <div class="qp">
+            <button class="qb" onclick="sv('setup');fp('New dental client: ')">➕ New Dental Client</button>
+            <button class="qb" onclick="sv('leads')">📥 Latest Leads</button>
+            <button class="qb" onclick="sv('clients')">🏥 All Clients</button>
+            <button class="qb" onclick="aiChat('Give me a weekly performance summary for my automation business')">📊 Weekly Report</button>
+          </div>
+        </div>
+        <div class="card"><div class="ct">Recent Activity</div><div id="dlogs"><div class="empty"><div class="ei">📭</div><div class="et">No activity yet</div><div class="es">Set up your first client to get started</div></div></div></div>
+      </div>
+
+      <!-- NEW CLIENT -->
+      <div class="view" id="view-setup">
+        <div class="ph"><div class="pt">⚡ New Client Setup</div><div class="ps">Describe your client — AI sets up everything automatically</div></div>
+        <div class="pa">
+          <div class="pl">Tell AI about your new client</div>
+          <div class="qp">
+            <button class="qb" onclick="fp('New dental client: Kingston Smile Dental, Dr. Brown, Kingston Jamaica, WhatsApp +18761234567')">🦷 Dental</button>
+            <button class="qb" onclick="fp('New law firm: Brown and Associates, Mr. Brown, Kingston Jamaica, +18761234567')">⚖️ Law Firm</button>
+            <button class="qb" onclick="fp('New medical clinic: Kingston Medical Centre, Dr. Williams, Kingston Jamaica, +18761234567')">🏥 Medical</button>
+            <button class="qb" onclick="fp('New real estate: JA Homes Realty, Mr. Thompson, Kingston Jamaica, +18761234567')">🏠 Real Estate</button>
+          </div>
+          <div class="pir">
+            <input class="pi" id="si" placeholder="e.g. New dental client: Kingston Smile Dental, Dr Brown, Kingston Jamaica, +18761234567"/>
+            <button class="btn bp2" id="sbtn" onclick="runSetup()">⚡ Set Up</button>
+          </div>
+          <div id="sresp"></div>
+        </div>
+        <div class="card" id="scard" style="display:none">
+          <div class="ct">Setup Progress</div>
+          <div class="steps">
+            <div class="sr" id="r1"><div class="sd dp" id="d1">1</div><div class="st"><div class="sn">Firebase Database</div><div class="sd2" id="dt1">Creating client record in Firestore</div></div><span id="ss1"></span></div>
+            <div class="sr" id="r2"><div class="sd dp" id="d2">2</div><div class="st"><div class="sn">Retell AI Phone Agent</div><div class="sd2" id="dt2">Building AI agent with custom script</div></div><span id="ss2"></span></div>
+            <div class="sr" id="r3"><div class="sd dp" id="d3">3</div><div class="st"><div class="sn">Twilio Configuration</div><div class="sd2" id="dt3">Setting up call forwarding and WhatsApp</div></div><span id="ss3"></span></div>
+            <div class="sr" id="r4"><div class="sd dp" id="d4">4</div><div class="st"><div class="sn">n8n Follow-up Workflows</div><div class="sd2" id="dt4">Creating SMS, WhatsApp, email sequences</div></div><span id="ss4"></span></div>
+            <div class="sr" id="r5"><div class="sd dp" id="d5">5</div><div class="st"><div class="sn">Website Generation</div><div class="sd2" id="dt5">Building ready-to-deploy website</div></div><span id="ss5"></span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CLIENTS -->
+      <div class="view" id="view-clients">
+        <div class="ph"><div class="pt">🏥 Active Clients</div><div class="ps">All clients managed by your system</div></div>
+        <div class="card"><div id="clcon"><div class="empty"><div class="ei">🏥</div><div class="et">No clients yet</div><div class="es">Go to New Client to add your first one</div></div></div></div>
+      </div>
+
+      <!-- LEADS -->
+      <div class="view" id="view-leads">
+        <div class="ph"><div class="pt">📥 Leads</div><div class="ps">All leads from calls, forms and WhatsApp</div></div>
+        <div id="lecon"><div class="empty"><div class="ei">📥</div><div class="et">No leads yet</div><div class="es">Leads appear here once clients go live</div></div></div>
+      </div>
+
+      <!-- EDIT -->
+      <div class="view" id="view-edit">
+        <div class="ph"><div class="pt">✏️ Edit Client</div><div class="ps">Make changes to any existing client</div></div>
+        <div class="pa">
+          <div class="pl">Describe what you want to change</div>
+          <div class="qp">
+            <button class="qb" onclick="fep('Change follow-up timing for [client] from 2 days to 1 day')">⏱ Follow-up Timing</button>
+            <button class="qb" onclick="fep('Update the AI agent greeting script for [client]')">🤖 AI Script</button>
+            <button class="qb" onclick="fep('Pause all automation for [client]')">⏸ Pause Client</button>
+            <button class="qb" onclick="fep('Regenerate the website for [client] with updated services')">🌐 Regen Website</button>
+          </div>
+          <div class="pir">
+            <input class="pi" id="ei" placeholder="e.g. Update Kingston Smile Dental — change follow-up to 1 day"/>
+            <button class="btn bp2" id="ebtn" onclick="runEdit()">✏️ Apply</button>
+          </div>
+          <div id="eresp"></div>
+        </div>
+      </div>
+
+      <!-- LOGS -->
+      <div class="view" id="view-logs">
+        <div class="ph"><div class="pt">📋 Activity Log</div><div class="ps">Everything your system has done</div></div>
+        <div class="card"><div id="logcon"><div class="empty"><div class="ei">📋</div><div class="et">No activity yet</div></div></div></div>
+      </div>
+
+      <!-- SETTINGS -->
+      <div class="view" id="view-settings">
+        <div class="ph"><div class="pt">⚙️ Settings</div><div class="ps">API keys are stored in Firebase — never in this code</div></div>
+        <div class="card">
+          <div class="ct">🔐 API Key Status</div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;" id="ksgrid">
+            <div class="ks" id="ks1">⏳ Anthropic</div>
+            <div class="ks" id="ks2">⏳ Retell AI</div>
+            <div class="ks" id="ks3">⏳ Twilio</div>
+            <div class="ks" id="ks4">⏳ Airtable</div>
+            <div class="ks" id="ks5">⏳ n8n</div>
+            <div class="ks" id="ks6">✅ Firebase</div>
+          </div>
+          <p style="font-size:12px;color:var(--muted);margin-top:12px;">To update keys: Firebase Console → Firestore → settings → api_keys</p>
+        </div>
+        <div class="card">
+          <div class="ct">💬 Ask AI Anything</div>
+          <div class="pir">
+            <input class="pi" id="chi" placeholder="Ask about your business, clients, revenue, strategies..."/>
+            <button class="btn bp2" onclick="runChat()">Ask</button>
+          </div>
+          <div id="chresp"></div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="mo" id="emod">
+  <div class="md">
+    <div class="mt" id="mtitle">Edit Client</div>
+    <div class="ms">Describe what you want to change for this client</div>
+    <input class="mi" id="minput" placeholder="e.g. Change follow-up to 1 day, update greeting script..."/>
+    <div id="mresp" style="margin-top:12px;font-size:13px;color:var(--muted);display:none;white-space:pre-wrap;line-height:1.6;"></div>
+    <div class="mf">
+      <button class="btn bs" onclick="closeMod()">Cancel</button>
+      <button class="btn bp2" id="mbtn" onclick="applyMod()">Apply Change</button>
     </div>
   </div>
 </div>
 
 <script>
-// ─── STATE ───────────────────────────────────────────────
-let clients = JSON.parse(localStorage.getItem('wv_clients') || '[]');
-let logs = JSON.parse(localStorage.getItem('wv_logs') || '[]');
-let currentEditClient = null;
+// ── FIREBASE ──────────────────────────────────────────────
+const FC = {
+  apiKey:"AIzaSyAUD5Ds0xf9jSd5OkNYuS1BtKu900AxNh8",
+  authDomain:"webv-tec-dental-os.firebaseapp.com",
+  projectId:"webv-tec-dental-os",
+  storageBucket:"webv-tec-dental-os.firebasestorage.app",
+  messagingSenderId:"821753520098",
+  appId:"1:821753520098:web:1b99c76d8cdb6c5bf9a3bb"
+};
+firebase.initializeApp(FC);
+const auth = firebase.auth();
+const db = firebase.firestore();
 
-// ─── NAVIGATION ──────────────────────────────────────────
-function showView(name) {
-  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-  document.getElementById('view-' + name).classList.add('active');
-  event.currentTarget && event.currentTarget.classList.add('active');
-  if (name === 'clients') renderClients();
-  if (name === 'logs') renderLogs();
-  if (name === 'dashboard') updateDashboard();
-  if (name === 'settings') loadKeys();
-}
+// ── STATE ─────────────────────────────────────────────────
+let keys = {}, user = null, clients = [], editId = null;
 
-// ─── KEYS ─────────────────────────────────────────────────
-function saveKeys() {
-  const fields = ['anthropic','n8n-url','n8n','twilio-sid','twilio-token','retell','airtable','firebase-id','firebase-api'];
-  fields.forEach(f => {
-    const val = document.getElementById('key-' + f).value;
-    if (val) localStorage.setItem('wv_key_' + f, val);
-  });
-  const s = document.getElementById('save-status');
-  s.style.display = 'block';
-  setTimeout(() => s.style.display = 'none', 3000);
-  document.getElementById('ai-status').textContent = '⚡ Claude AI Ready';
-  document.getElementById('ai-status').className = 'badge badge-green';
-}
-
-function loadKeys() {
-  const fields = ['anthropic','n8n-url','n8n','twilio-sid','twilio-token','retell','airtable','firebase-id','firebase-api'];
-  fields.forEach(f => {
-    const val = localStorage.getItem('wv_key_' + f);
-    if (val) document.getElementById('key-' + f).value = val;
+// ── AUTH ──────────────────────────────────────────────────
+function signInGoogle() {
+  auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(() => {
+    document.getElementById('lerr').style.display = 'block';
   });
 }
+function signOut() { if(confirm('Sign out?')) auth.signOut(); }
 
-function getKey(k) { return localStorage.getItem('wv_key_' + k) || ''; }
-
-// ─── AI CALL ──────────────────────────────────────────────
-async function callClaude(systemPrompt, userMessage, outputEl) {
-  const apiKey = getKey('anthropic');
-  if (!apiKey) {
-    outputEl.innerHTML = '<div class="ai-msg">⚠️ No Anthropic API key found. Go to API Keys and add your key first.</div>';
-    outputEl.classList.add('visible');
-    return null;
-  }
-
-  outputEl.innerHTML = '<div class="ai-msg pulsing">🤖 Claude is thinking...</div>';
-  outputEl.classList.add('visible');
-
-  try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1000,
-        system: systemPrompt,
-        messages: [{ role: 'user', content: userMessage }]
-      })
-    });
-    const data = await res.json();
-    return data.content?.[0]?.text || 'No response';
-  } catch (e) {
-    return 'Error: ' + e.message;
-  }
-}
-
-// ─── NEW CLIENT SETUP ────────────────────────────────────
-async function runSetup() {
-  const input = document.getElementById('setup-input').value.trim();
-  if (!input) return;
-
-  const btn = document.getElementById('setup-btn');
-  btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span>Setting up...';
-
-  const responseEl = document.getElementById('ai-response');
-  const stepsCard = document.getElementById('setup-steps-card');
-  stepsCard.style.display = 'block';
-
-  // Reset steps
-  const stepIds = ['firebase','retell','twilio','n8n','website'];
-  stepIds.forEach((id, i) => {
-    document.getElementById('dot-' + id).className = 'step-dot dot-pending';
-    document.getElementById('dot-' + id).textContent = i + 1;
-    document.getElementById('step-' + id).className = 'step-row';
-    document.getElementById('status-' + id).textContent = '';
-  });
-
-  const systemPrompt = `You are an AI assistant for WEBVTEC, a Jamaican web developer who builds AI-powered lead management systems for businesses in Jamaica. 
-
-When given client details, you:
-1. Extract: business name, type, owner name, phone number, location
-2. Confirm what you understood
-3. Generate a custom Retell AI phone agent script (greeting + 3 qualification questions specific to that business type)
-4. List the exact Twilio forwarding code they need (for Digicel: **21*NUMBER# or Flow: *72NUMBER)
-5. Describe the n8n follow-up sequence (Day 0 instant, Day 2 follow-up, Day 5 final)
-6. Give the dentist/client a summary of what was set up
-
-Be concise, practical, and friendly. Use plain text, no markdown symbols.`;
-
-  const reply = await callClaude(systemPrompt, input, responseEl);
-  if (!reply) { btn.disabled = false; btn.textContent = '⚡ Set Up Client'; return; }
-
-  responseEl.innerHTML = `<div class="ai-msg">${reply}</div>`;
-
-  // Extract client name
-  const nameMatch = input.match(/:\s*([^,]+)/);
-  const clientName = nameMatch ? nameMatch[1].trim() : 'New Client';
-  const phoneMatch = input.match(/\+?1?876\d{7}|\+\d{10,}/);
-
-  // Animate steps
-  let i = 0;
-  const stepLabels = [
-    ['Creating Firebase collection...', 'Lead database ready'],
-    ['Building Retell AI agent...', 'Phone agent configured'],
-    ['Setting up Twilio forwarding...', 'Call forwarding ready'],
-    ['Creating n8n workflows...', 'Follow-up sequences live'],
-    ['Generating website files...', 'Website ready to deploy']
-  ];
-
-  const interval = setInterval(() => {
-    if (i > 0) {
-      const prevId = stepIds[i-1];
-      document.getElementById('dot-' + prevId).className = 'step-dot dot-done';
-      document.getElementById('dot-' + prevId).textContent = '✓';
-      document.getElementById('step-' + prevId).className = 'step-row done';
-      document.getElementById('status-' + prevId).innerHTML = '<span class="badge badge-green" style="font-size:10px">Done</span>';
-    }
-    if (i < stepIds.length) {
-      const id = stepIds[i];
-      document.getElementById('dot-' + id).className = 'step-dot dot-active pulsing';
-      document.getElementById('step-' + id).className = 'step-row active';
-      document.querySelector(`#step-${id} .step-detail`).textContent = stepLabels[i][0];
-      i++;
-    } else {
-      clearInterval(interval);
-      // Final done
-      const lastId = stepIds[stepIds.length-1];
-      document.getElementById('dot-' + lastId).className = 'step-dot dot-done';
-      document.getElementById('dot-' + lastId).textContent = '✓';
-      document.getElementById('step-' + lastId).className = 'step-row done';
-      document.getElementById('status-' + lastId).innerHTML = '<span class="badge badge-green" style="font-size:10px">Done</span>';
-
-      // Save client
-      const newClient = {
-        id: Date.now(),
-        name: clientName,
-        phone: phoneMatch ? phoneMatch[0] : 'N/A',
-        type: 'Dental Clinic',
-        status: 'active',
-        created: new Date().toLocaleDateString(),
-        leads: 0,
-        monthly: 350
-      };
-      clients.push(newClient);
-      localStorage.setItem('wv_clients', JSON.stringify(clients));
-
-      // Add log
-      addLog('✅', `Client "${clientName}" fully set up`, 'badge-green');
-      updateDashboard();
-
-      btn.disabled = false;
-      btn.textContent = '⚡ Set Up Client';
-      document.getElementById('setup-input').value = '';
-    }
-  }, 1800);
-}
-
-// ─── EDIT CLIENT ─────────────────────────────────────────
-async function runEdit() {
-  const input = document.getElementById('edit-input').value.trim();
-  if (!input) return;
-
-  const btn = document.getElementById('edit-btn');
-  btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span>Applying...';
-
-  const responseEl = document.getElementById('edit-response');
-  responseEl.innerHTML = '';
-
-  const systemPrompt = `You are an AI assistant for WEBVTEC managing automation systems for Jamaican businesses. 
-When asked to edit a client's setup, explain exactly what changes would be made to:
-- Retell AI agent (if script/behavior changes)
-- n8n workflows (if timing/sequences change)  
-- Twilio (if number/SMS changes)
-- Firebase (if data structure changes)
-Be specific and practical. Confirm the change was applied. Plain text only.
-
-Current clients: ${clients.map(c => c.name).join(', ')}`;
-
-  const reply = await callClaude(systemPrompt, input, responseEl);
-  if (reply) {
-    responseEl.innerHTML = `<div class="ai-msg">${reply}</div>`;
-    addLog('✏️', `Edit applied: ${input.substring(0, 60)}...`, 'badge-purple');
-  }
-
-  btn.disabled = false;
-  btn.textContent = '✏️ Apply Changes';
-}
-
-// ─── MODAL EDIT ───────────────────────────────────────────
-function openEditModal(clientId) {
-  currentEditClient = clients.find(c => c.id === clientId);
-  if (!currentEditClient) return;
-  document.getElementById('modal-title').textContent = 'Edit: ' + currentEditClient.name;
-  document.getElementById('modal-sub').textContent = 'Describe what you want to change for this client';
-  document.getElementById('modal-input').value = '';
-  document.getElementById('modal-response').style.display = 'none';
-  document.getElementById('edit-modal').classList.add('open');
-}
-
-function closeModal() {
-  document.getElementById('edit-modal').classList.remove('open');
-  currentEditClient = null;
-}
-
-async function applyModalEdit() {
-  const input = document.getElementById('modal-input').value.trim();
-  if (!input || !currentEditClient) return;
-
-  const btn = document.getElementById('modal-btn');
-  btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span>Applying...';
-
-  const responseEl = document.getElementById('modal-response');
-  responseEl.style.display = 'block';
-  responseEl.textContent = 'Processing...';
-
-  const apiKey = getKey('anthropic');
-  if (!apiKey) {
-    responseEl.textContent = '⚠️ Add your Anthropic API key in Settings first.';
-    btn.disabled = false;
-    btn.textContent = 'Apply Change';
-    return;
-  }
-
-  try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 500,
-        system: `You manage automation systems for Jamaican businesses. Client: ${currentEditClient.name}. Apply the requested change and confirm in 2-3 sentences. Plain text only.`,
-        messages: [{ role: 'user', content: input }]
-      })
-    });
-    const data = await res.json();
-    const reply = data.content?.[0]?.text || 'Change applied.';
-    responseEl.textContent = reply;
-    addLog('✏️', `${currentEditClient.name}: ${input.substring(0,50)}`, 'badge-purple');
-  } catch(e) {
-    responseEl.textContent = 'Error: ' + e.message;
-  }
-
-  btn.disabled = false;
-  btn.textContent = 'Apply Change';
-}
-
-// ─── RENDER CLIENTS ───────────────────────────────────────
-function renderClients() {
-  const container = document.getElementById('clients-container');
-  if (clients.length === 0) {
-    container.innerHTML = `<div class="empty"><div class="empty-icon">🏥</div><div class="empty-title">No clients yet</div><div class="empty-sub">Go to New Client to add your first one</div></div>`;
-    return;
-  }
-
-  container.innerHTML = `
-    <table class="clients-table">
-      <thead>
-        <tr>
-          <th>Client</th>
-          <th>Phone</th>
-          <th>Status</th>
-          <th>Leads</th>
-          <th>Monthly</th>
-          <th>Since</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${clients.map(c => `
-          <tr>
-            <td><strong>${c.name}</strong><div style="font-size:11px;color:var(--muted)">${c.type}</div></td>
-            <td style="font-family:'JetBrains Mono',monospace;font-size:12px">${c.phone}</td>
-            <td><span class="status-dot dot-green"></span>Active</td>
-            <td>${c.leads}</td>
-            <td style="color:var(--green);font-weight:600">$${c.monthly}</td>
-            <td style="color:var(--muted);font-size:12px">${c.created}</td>
-            <td>
-              <div class="action-btns">
-                <button class="action-btn" onclick="openEditModal(${c.id})">✏️ Edit</button>
-                <button class="action-btn danger" onclick="removeClient(${c.id})">🗑 Remove</button>
-              </div>
-            </td>
-          </tr>
-        `).join('')}
-      </tbody>
-    </table>`;
-}
-
-function removeClient(id) {
-  if (!confirm('Remove this client?')) return;
-  const c = clients.find(x => x.id === id);
-  clients = clients.filter(x => x.id !== id);
-  localStorage.setItem('wv_clients', JSON.stringify(clients));
-  addLog('🗑', `Client "${c?.name}" removed`, 'badge-red');
-  renderClients();
-  updateDashboard();
-}
-
-// ─── LOGS ────────────────────────────────────────────────
-function addLog(icon, message, badgeClass) {
-  const now = new Date();
-  const time = now.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
-  logs.unshift({ icon, message, time, badgeClass });
-  if (logs.length > 50) logs = logs.slice(0, 50);
-  localStorage.setItem('wv_logs', JSON.stringify(logs));
-  updateDashboardLogs();
-}
-
-function renderLogs() {
-  const container = document.getElementById('logs-container');
-  if (logs.length === 0) {
-    container.innerHTML = `<div class="empty"><div class="empty-icon">📋</div><div class="empty-title">No activity yet</div></div>`;
-    return;
-  }
-  container.innerHTML = logs.map(l => `
-    <div class="log-entry">
-      <span class="log-time">${l.time}</span>
-      <span class="log-msg">${l.icon} ${l.message}</span>
-    </div>`).join('');
-}
-
-function updateDashboardLogs() {
-  const container = document.getElementById('dashboard-logs');
-  if (logs.length === 0) return;
-  container.innerHTML = logs.slice(0,5).map(l => `
-    <div class="log-entry">
-      <span class="log-time">${l.time}</span>
-      <span class="log-msg">${l.icon} ${l.message}</span>
-    </div>`).join('');
-}
-
-// ─── DASHBOARD STATS ─────────────────────────────────────
-function updateDashboard() {
-  const count = clients.length;
-  const mrr = count * 350;
-  const totalLeads = clients.reduce((a, c) => a + c.leads, 0);
-  const profit = mrr - (count * 42);
-
-  document.getElementById('stat-clients').textContent = count;
-  document.getElementById('stat-mrr').textContent = '$' + mrr.toLocaleString();
-  document.getElementById('stat-leads').textContent = totalLeads;
-  document.getElementById('stat-profit').textContent = '$' + Math.max(0, profit).toLocaleString();
-  document.getElementById('client-badge').textContent = count + ' Client' + (count !== 1 ? 's' : '');
-  document.getElementById('sidebar-count').textContent = count;
-  updateDashboardLogs();
-}
-
-// ─── HELPERS ─────────────────────────────────────────────
-function fillPrompt(text) {
-  document.getElementById('setup-input').value = text;
-  document.getElementById('setup-input').focus();
-}
-
-function fillEditPrompt(text) {
-  document.getElementById('edit-input').value = text;
-  document.getElementById('edit-input').focus();
-}
-
-function quickPrompt(text) {
-  showView('setup');
-  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-  fillPrompt(text);
-}
-
-// Enter key support
-document.addEventListener('keydown', e => {
-  if (e.key === 'Enter') {
-    const activeView = document.querySelector('.view.active');
-    if (activeView?.id === 'view-setup') runSetup();
-    if (activeView?.id === 'view-edit') runEdit();
+auth.onAuthStateChanged(async u => {
+  if (u) {
+    user = u;
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app-screen').style.display = 'flex';
+    if (u.photoURL) document.getElementById('uav').src = u.photoURL;
+    const h = new Date().getHours();
+    const g = h<12?'Good morning':h<17?'Good afternoon':'Good evening';
+    document.getElementById('greet').textContent = `${g}, ${u.displayName?.split(' ')[0]||'WEBVTEC'} 👋`;
+    await loadKeys();
+    loadClients();
+    loadLogs();
+    checkKeys();
+  } else {
+    user = null;
+    document.getElementById('login-screen').style.display = 'flex';
+    document.getElementById('app-screen').style.display = 'none';
   }
 });
 
-// ─── INIT ────────────────────────────────────────────────
-updateDashboard();
-loadKeys();
-if (getKey('anthropic')) {
-  document.getElementById('ai-status').textContent = '⚡ Claude AI Ready';
-  document.getElementById('ai-status').className = 'badge badge-green';
+// ── LOAD KEYS FROM FIRESTORE ──────────────────────────────
+async function loadKeys() {
+  try {
+    const d = await db.collection('settings').doc('api_keys').get();
+    if (d.exists) { keys = d.data(); console.log('Keys loaded ✅'); }
+  } catch(e) { console.error('Load keys error:', e); }
 }
+
+function checkKeys() {
+  const map = {
+    ks1: ['anthropic_key','Anthropic'],
+    ks2: ['retell_key','Retell AI'],
+    ks3: ['twilio_sid','Twilio'],
+    ks4: ['airtable_token','Airtable'],
+    ks5: ['n8n_key','n8n'],
+    ks6: [true,'Firebase']
+  };
+  Object.entries(map).forEach(([id,[k,label]]) => {
+    const el = document.getElementById(id);
+    const ok = k === true ? true : !!keys[k];
+    el.textContent = (ok ? '✅ ' : '❌ ') + label;
+    el.style.color = ok ? 'var(--green)' : 'var(--red)';
+  });
+  if (keys.anthropic_key) {
+    document.getElementById('ai-badge').textContent = '⚡ Claude Active';
+    document.getElementById('ai-badge').className = 'badge bg';
+  }
+}
+
+// ── CLAUDE API ────────────────────────────────────────────
+async function claude(system, msg) {
+  if (!keys.anthropic_key) return '⚠️ Anthropic key missing. Add it to Firebase → Firestore → settings → api_keys → anthropic_key';
+  try {
+    const r = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'x-api-key': keys.anthropic_key,
+        'anthropic-version':'2023-06-01',
+        'anthropic-dangerous-direct-browser-access':'true'
+      },
+      body: JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:1500,
+        system, messages:[{role:'user',content:msg}]
+      })
+    });
+    const d = await r.json();
+    if (d.error) return '⚠️ ' + d.error.message;
+    return d.content?.[0]?.text || 'No response';
+  } catch(e) { return '⚠️ ' + e.message; }
+}
+
+// ── RETELL - CREATE AGENT ─────────────────────────────────
+async function createRetellAgent(name, script) {
+  if (!keys.retell_key) return {ok:false, msg:'No Retell key in Firebase'};
+  try {
+    const r = await fetch('https://api.retellai.com/v2/create-agent', {
+      method:'POST',
+      headers:{'Authorization':'Bearer '+keys.retell_key,'Content-Type':'application/json'},
+      body: JSON.stringify({
+        agent_name: name + ' AI Receptionist',
+        response_engine:{type:'retell-llm'},
+        voice_id:'11labs-Lily',
+        language:'en-US',
+        general_prompt: script
+      })
+    });
+    const d = await r.json();
+    return d.agent_id ? {ok:true, agent_id:d.agent_id} : {ok:false, msg: JSON.stringify(d)};
+  } catch(e) { return {ok:false, msg:e.message}; }
+}
+
+// ── NEW CLIENT SETUP ──────────────────────────────────────
+async function runSetup() {
+  const input = document.getElementById('si').value.trim();
+  if (!input) return;
+  const btn = document.getElementById('sbtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="sp"></span>Setting up...';
+  document.getElementById('scard').style.display = 'block';
+  resetSteps();
+  const resp = document.getElementById('sresp');
+  resp.innerHTML = '<div class="ai-msg pu">🤖 Claude is analysing your client details...</div>';
+
+  // Step 1 — Claude generates client data
+  activStep(1);
+  const sys = `You are an AI assistant for WEBVTEC, a Jamaican developer building AI-powered lead management systems for businesses in Jamaica.
+
+Given client details, respond ONLY with a valid JSON object (no markdown, no extra text, no code blocks):
+{
+  "name": "exact business name",
+  "owner": "owner name or empty string",
+  "phone": "phone number with country code or empty string",
+  "type": "dental or medical or legal or realestate or barbershop or other",
+  "location": "specific location in Jamaica",
+  "agent_script": "Professional warm AI receptionist script for this business. Start with good morning/afternoon, mention business name, ask how to help, offer to book appointment. 3-4 natural sentences.",
+  "followup_sms": "Friendly SMS for a lead who called but did not book. Under 160 chars. Include business name.",
+  "followup_whatsapp": "Friendly WhatsApp follow-up message. 2-3 sentences. Include business name and offer to help.",
+  "forward_code_digicel": "**21*[TWILIO_NUMBER]#",
+  "forward_code_flow": "*72[TWILIO_NUMBER]",
+  "summary": "Plain English summary of what was set up. 2 sentences."
+}`;
+
+  const raw = await claude(sys, input);
+  let cd;
+  try {
+    cd = JSON.parse(raw.replace(/```json|```/g,'').trim());
+  } catch(e) {
+    resp.innerHTML = `<div class="ai-msg">${raw}</div>`;
+    doneStep(1, false, 'Parse error');
+    btn.disabled=false; btn.textContent='⚡ Set Up'; return;
+  }
+
+  // Save to Firestore
+  const cid = cd.name.toLowerCase().replace(/[^a-z0-9]/g,'-').replace(/-+/g,'-').substring(0,40);
+  try {
+    await db.collection('clients').doc(cid).set({
+      ...cd, id:cid, status:'active', monthly_fee:350, leads:0,
+      created: firebase.firestore.FieldValue.serverTimestamp(),
+      uid: user.uid
+    });
+    doneStep(1, true);
+  } catch(e) { doneStep(1, false, 'Firestore error'); }
+
+  // Step 2 — Retell
+  activStep(2);
+  const retell = await createRetellAgent(cd.name, cd.agent_script);
+  if (retell.ok) {
+    await db.collection('clients').doc(cid).update({retell_agent_id: retell.agent_id});
+    doneStep(2, true);
+  } else { doneStep(2, false, retell.msg); }
+
+  // Step 3 — Twilio
+  activStep(3);
+  await db.collection('clients').doc(cid).update({twilio_ready: !!keys.twilio_sid});
+  doneStep(3, !!keys.twilio_sid, keys.twilio_sid ? '' : 'Add twilio_sid to Firebase');
+
+  // Step 4 — n8n
+  activStep(4);
+  await db.collection('clients').doc(cid).update({n8n_ready: !!keys.n8n_key});
+  doneStep(4, !!keys.n8n_key, keys.n8n_key ? '' : 'Add n8n_key to Firebase');
+
+  // Step 5 — Website
+  activStep(5);
+  const site = buildSite(cd);
+  await db.collection('clients').doc(cid).update({website_ready: true});
+  doneStep(5, true);
+
+  // Download link
+  const blob = new Blob([site], {type:'text/html'});
+  const url = URL.createObjectURL(blob);
+
+  resp.innerHTML = `<div class="ai-msg">✅ ${cd.summary}
+
+📞 AI Phone Agent Script:
+"${cd.agent_script}"
+
+📱 Call Forwarding:
+Digicel: ${cd.forward_code_digicel}
+Flow: ${cd.forward_code_flow}
+
+💬 SMS Follow-up:
+"${cd.followup_sms}"
+
+💬 WhatsApp Follow-up:
+"${cd.followup_whatsapp}"</div>
+<a href="${url}" download="${cid}-website.html" class="btn bp2 bsm" style="display:inline-block;margin-top:10px;text-decoration:none;">⬇️ Download Website</a>`;
+
+  await addLog('✅', `Client "${cd.name}" set up`);
+  await loadClients();
+  document.getElementById('si').value = '';
+  btn.disabled=false; btn.textContent='⚡ Set Up';
+}
+
+// ── GENERATE WEBSITE ──────────────────────────────────────
+function buildSite(c) {
+  const clr = c.type==='dental'?'#2563eb':c.type==='medical'?'#16a34a':c.type==='legal'?'#7c3aed':c.type==='realestate'?'#ea580c':'#0891b2';
+  const ph = c.phone?.replace(/[^0-9]/g,'') || '';
+  return `<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>${c.name} | ${c.location}</title>
+<style>*{margin:0;padding:0;box-sizing:border-box;}body{font-family:system-ui,sans-serif;}
+nav{background:${clr};padding:14px 24px;display:flex;justify-content:space-between;align-items:center;}
+.nl{color:white;font-weight:700;font-size:17px;}.nc{background:white;color:${clr};padding:8px 16px;border-radius:6px;font-weight:600;text-decoration:none;font-size:13px;}
+.hero{background:linear-gradient(135deg,${clr},${clr}bb);color:white;padding:72px 24px;text-align:center;}
+.hero h1{font-size:34px;font-weight:800;margin-bottom:10px;}.hero p{font-size:15px;opacity:.9;margin-bottom:24px;max-width:480px;margin-left:auto;margin-right:auto;}
+.hb{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;}
+.bw{background:white;color:${clr};padding:11px 22px;border-radius:8px;font-weight:600;text-decoration:none;font-size:14px;}
+.bo{border:2px solid white;color:white;padding:11px 22px;border-radius:8px;font-weight:600;text-decoration:none;font-size:14px;}
+.sec{padding:56px 24px;max-width:880px;margin:0 auto;}.stit{font-size:24px;font-weight:700;text-align:center;margin-bottom:28px;}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;}
+.sc{border:1px solid #e5e7eb;border-radius:10px;padding:18px;text-align:center;}.sic{font-size:26px;margin-bottom:6px;}.snm{font-weight:600;font-size:13px;}
+.fs{background:#f8faff;padding:56px 24px;}.fi{max-width:480px;margin:0 auto;}.ft{font-size:22px;font-weight:700;text-align:center;margin-bottom:22px;}
+input,select,textarea{width:100%;padding:11px 13px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;margin-bottom:10px;font-family:inherit;outline:none;}
+input:focus,select:focus,textarea:focus{border-color:${clr};}
+.sub{width:100%;background:${clr};color:white;padding:13px;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;}
+.ok{display:none;background:#dcfce7;color:#166534;padding:12px;border-radius:8px;text-align:center;margin-top:10px;font-weight:500;}
+footer{background:#111827;color:#9ca3af;padding:20px;text-align:center;font-size:12px;}
+.wa{position:fixed;bottom:22px;right:22px;background:#25d366;color:white;width:54px;height:54px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:24px;text-decoration:none;box-shadow:0 4px 12px rgba(0,0,0,.2);z-index:99;}
+</style></head><body>
+<nav><div class="nl">${c.name}</div><a href="tel:${c.phone}" class="nc">📞 Call Now</a></nav>
+<div class="hero"><h1>${c.name}</h1><p>Professional services in ${c.location}. Available 24/7.</p>
+<div class="hb"><a href="#book" class="bw">📅 Book Appointment</a><a href="tel:${c.phone}" class="bo">📞 Call Us</a></div></div>
+<div class="sec"><div class="stit">Our Services</div><div class="grid">
+<div class="sc"><div class="sic">⭐</div><div class="snm">Consultation</div></div>
+<div class="sc"><div class="sic">🏆</div><div class="snm">Treatment</div></div>
+<div class="sc"><div class="sic">✅</div><div class="snm">Follow-up Care</div></div>
+<div class="sc"><div class="sic">🚨</div><div class="snm">Emergency</div></div></div></div>
+<div class="fs" id="book"><div class="fi"><div class="ft">Book an Appointment</div>
+<input type="text" id="fn" placeholder="Your Full Name" required/>
+<input type="tel" id="fp2" placeholder="Your Phone Number" required/>
+<input type="email" id="fe" placeholder="Email (optional)"/>
+<select id="fsv"><option value="">Select service...</option><option>Consultation</option><option>Treatment</option><option>Emergency</option><option>Follow-up</option></select>
+<textarea id="fm" rows="3" placeholder="Additional notes..."></textarea>
+<button class="sub" onclick="sub()">Book Appointment →</button>
+<div class="ok" id="ok">✅ Received! We will contact you shortly to confirm.</div>
+</div></div>
+<footer>© 2026 ${c.name} · ${c.location} · ${c.phone}</footer>
+<a href="https://wa.me/${ph}" class="wa" target="_blank">💬</a>
+<script>
+const FB = ${JSON.stringify(FC)};
+const CID = "${c.name.toLowerCase().replace(/[^a-z0-9]/g,'-').substring(0,40)}";
+async function sub() {
+  const name=document.getElementById('fn').value.trim();
+  const phone=document.getElementById('fp2').value.trim();
+  if(!name||!phone){alert('Please enter name and phone');return;}
+  try{
+    const {initializeApp,getApps}=await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js');
+    const {getFirestore,collection,addDoc,serverTimestamp}=await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
+    const app=getApps().length?getApps()[0]:initializeApp(FB);
+    const db=getFirestore(app);
+    await addDoc(collection(db,'leads'),{client_id:CID,name,phone,email:document.getElementById('fe').value,service:document.getElementById('fsv').value,message:document.getElementById('fm').value,source:'website_form',status:'new',created:serverTimestamp()});
+    document.getElementById('ok').style.display='block';
+    ['fn','fp2','fe','fm'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('fsv').value='';
+  }catch(e){alert('Booking received! We will contact you shortly.');}
+}
+<\/script></body></html>`;
+}
+
+// ── STEPS ─────────────────────────────────────────────────
+function resetSteps() {
+  for(let i=1;i<=5;i++){
+    document.getElementById('d'+i).className='sd dp';
+    document.getElementById('d'+i).textContent=i;
+    document.getElementById('r'+i).className='sr';
+    document.getElementById('ss'+i).textContent='';
+  }
+}
+function activStep(n) {
+  if(n>1){
+    const p=n-1;
+    if(document.getElementById('d'+p).className.includes('da')){doneStep(p,true);}
+  }
+  document.getElementById('d'+n).className='sd da pu';
+  document.getElementById('r'+n).className='sr act';
+}
+function doneStep(n, ok, note='') {
+  document.getElementById('d'+n).className='sd '+(ok?'dd':'dp');
+  document.getElementById('d'+n).textContent=ok?'✓':'!';
+  document.getElementById('r'+n).className='sr '+(ok?'done':'');
+  document.getElementById('ss'+n).innerHTML=ok
+    ?'<span style="font-size:10px;color:var(--green)">✅</span>'
+    :`<span style="font-size:10px;color:var(--yellow)" title="${note}">⚠️</span>`;
+}
+
+// ── CLIENTS ───────────────────────────────────────────────
+async function loadClients() {
+  try {
+    const snap = await db.collection('clients').where('uid','==',user.uid).get();
+    clients = snap.docs.map(d=>({id:d.id,...d.data()}));
+    updateStats(); renderClients();
+  } catch(e){console.error(e);}
+}
+function renderClients() {
+  const c = document.getElementById('clcon');
+  if(!clients.length){c.innerHTML='<div class="empty"><div class="ei">🏥</div><div class="et">No clients yet</div><div class="es">Go to New Client to add your first one</div></div>';return;}
+  c.innerHTML=`<table class="tbl"><thead><tr><th>Client</th><th>Type</th><th>Phone</th><th>Status</th><th>Monthly</th><th>Actions</th></tr></thead><tbody>
+  ${clients.map(x=>`<tr>
+    <td><strong>${x.name}</strong>${x.owner?`<div style="font-size:11px;color:var(--muted)">${x.owner}</div>`:''}</td>
+    <td style="color:var(--muted);font-size:12px">${x.type||'—'}</td>
+    <td style="font-family:monospace;font-size:12px">${x.phone||'—'}</td>
+    <td><span class="sdot sg"></span>Active</td>
+    <td style="color:var(--green);font-weight:600">$${x.monthly_fee||350}</td>
+    <td><div class="abs">
+      <button class="ab" onclick="openMod('${x.id}','${x.name.replace(/'/g,"\\'")}')">✏️ Edit</button>
+      <button class="ab d" onclick="delClient('${x.id}','${x.name.replace(/'/g,"\\'")}')">🗑</button>
+    </div></td>
+  </tr>`).join('')}</tbody></table>`;
+}
+async function delClient(id, name) {
+  if(!confirm(`Remove ${name}?`)) return;
+  await db.collection('clients').doc(id).delete();
+  await addLog('🗑',`"${name}" removed`);
+  loadClients();
+}
+
+// ── LEADS ─────────────────────────────────────────────────
+async function loadLeads() {
+  try {
+    const snap = await db.collection('leads').orderBy('created','desc').limit(50).get();
+    const leads = snap.docs.map(d=>({id:d.id,...d.data()}));
+    const c = document.getElementById('lecon');
+    if(!leads.length){c.innerHTML='<div class="empty"><div class="ei">📥</div><div class="et">No leads yet</div><div class="es">Leads appear once clients go live</div></div>';return;}
+    c.innerHTML=leads.map(l=>`<div class="lc">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div class="ln">${l.name||'Unknown'}</div>
+        <span class="ls s${l.status||'new'}">${l.status||'new'}</span>
+      </div>
+      <div class="lm">
+        <span>📞 ${l.phone||'—'}</span>
+        <span>📋 ${l.service||'General'}</span>
+        <span>📍 ${l.source||'unknown'}</span>
+        <span>🏥 ${l.client_id||'—'}</span>
+      </div>
+    </div>`).join('');
+  }catch(e){console.error(e);}
+}
+
+// ── EDIT ──────────────────────────────────────────────────
+async function runEdit() {
+  const input = document.getElementById('ei').value.trim();
+  if(!input) return;
+  const btn = document.getElementById('ebtn');
+  btn.disabled=true; btn.innerHTML='<span class="sp"></span>Applying...';
+  const r = document.getElementById('eresp');
+  r.innerHTML='<div class="ai-msg pu">🤖 Processing...</div>';
+  const reply = await claude(
+    `You manage AI automation systems for WEBVTEC in Jamaica. Current clients: ${clients.map(c=>c.name).join(', ')||'none'}. When asked to edit a client explain exactly what changes would be made to their Retell agent, n8n workflows, or Twilio config. Be specific. Plain text only.`,
+    input
+  );
+  r.innerHTML=`<div class="ai-msg">${reply}</div>`;
+  await addLog('✏️',`Edit: ${input.substring(0,60)}`);
+  btn.disabled=false; btn.textContent='✏️ Apply';
+}
+
+// ── MODAL ─────────────────────────────────────────────────
+function openMod(id, name) {
+  editId=id;
+  document.getElementById('mtitle').textContent='Edit: '+name;
+  document.getElementById('minput').value='';
+  document.getElementById('mresp').style.display='none';
+  document.getElementById('emod').classList.add('open');
+}
+function closeMod() { document.getElementById('emod').classList.remove('open'); editId=null; }
+async function applyMod() {
+  const input = document.getElementById('minput').value.trim();
+  if(!input) return;
+  const btn = document.getElementById('mbtn');
+  btn.disabled=true; btn.innerHTML='<span class="sp"></span>';
+  const r = document.getElementById('mresp');
+  r.style.display='block'; r.textContent='Processing...';
+  const cl = clients.find(c=>c.id===editId);
+  const reply = await claude(
+    `You manage AI systems for WEBVTEC. Client: ${cl?.name||editId}. Apply the change and confirm in 2-3 sentences. Plain text.`,
+    input
+  );
+  r.textContent=reply;
+  await addLog('✏️',`${cl?.name}: ${input.substring(0,50)}`);
+  btn.disabled=false; btn.textContent='Apply Change';
+}
+
+// ── CHAT ──────────────────────────────────────────────────
+async function runChat() {
+  const input = document.getElementById('chi').value.trim();
+  if(!input) return;
+  await aiChat(input);
+}
+async function aiChat(msg) {
+  sv('settings');
+  const r = document.getElementById('chresp');
+  r.innerHTML='<div class="ai-msg pu">🤖 Thinking...</div>';
+  const reply = await claude(
+    `You are an AI assistant for WEBVTEC, a Jamaican developer selling AI automation to businesses in Jamaica at $350/mo per client. Active clients: ${clients.length}. MRR: $${clients.length*350}. Help with business advice, client strategy, and automation questions. Be practical and Jamaica-aware. Plain text.`,
+    msg
+  );
+  r.innerHTML=`<div class="ai-msg">${reply}</div>`;
+  document.getElementById('chi').value='';
+}
+
+// ── LOGS ──────────────────────────────────────────────────
+async function addLog(icon, msg) {
+  try {
+    await db.collection('logs').add({
+      icon, msg,
+      time: new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}),
+      created: firebase.firestore.FieldValue.serverTimestamp(),
+      uid: user.uid
+    });
+    loadLogs();
+  } catch(e){}
+}
+async function loadLogs() {
+  try {
+    const snap = await db.collection('logs').where('uid','==',user.uid).orderBy('created','desc').limit(20).get();
+    const logs = snap.docs.map(d=>d.data());
+    const html = logs.length ? logs.map(l=>`<div class="log-e"><span class="log-t">${l.time}</span><span>${l.icon} ${l.msg}</span></div>`).join('') : '<div class="empty"><div class="ei">📋</div><div class="et">No activity yet</div></div>';
+    document.getElementById('dlogs').innerHTML = html;
+    document.getElementById('logcon').innerHTML = html;
+  } catch(e){}
+}
+
+// ── STATS ─────────────────────────────────────────────────
+function updateStats() {
+  const n = clients.length;
+  document.getElementById('s1').textContent = n;
+  document.getElementById('s2').textContent = '$'+(n*350).toLocaleString();
+  document.getElementById('s3').textContent = clients.reduce((a,c)=>a+(c.leads||0),0);
+  document.getElementById('s4').textContent = '$'+Math.max(0,(n*350)-(n*42)).toLocaleString();
+  document.getElementById('cl-badge').textContent = n+' Client'+(n!==1?'s':'');
+  document.getElementById('scc').textContent = n;
+}
+
+// ── NAV ───────────────────────────────────────────────────
+function sv(name, el) {
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.querySelectorAll('.ni').forEach(n=>n.classList.remove('active'));
+  document.getElementById('view-'+name)?.classList.add('active');
+  if(el) el.classList.add('active');
+  if(name==='clients') loadClients();
+  if(name==='leads') loadLeads();
+  if(name==='logs') loadLogs();
+  if(name==='settings') checkKeys();
+}
+function fp(t){document.getElementById('si').value=t;document.getElementById('si').focus();}
+function fep(t){document.getElementById('ei').value=t;document.getElementById('ei').focus();}
+
+document.addEventListener('keydown',e=>{
+  if(e.key!=='Enter') return;
+  const v = document.querySelector('.view.active')?.id;
+  if(v==='view-setup') runSetup();
+  if(v==='view-edit') runEdit();
+  if(v==='view-settings'&&document.activeElement.id==='chi') runChat();
+});
 </script>
 </body>
 </html>
