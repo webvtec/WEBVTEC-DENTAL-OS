@@ -390,19 +390,28 @@ async function claude(system, msg) {
 async function createRetellAgent(name, script) {
   if (!keys.retell_key) return {ok:false, msg:'No Retell key in Firebase'};
   try {
-    const r = await fetch('https://api.retellai.com/v2/create-agent', {
+    // Step 1: Create the LLM first
+    const llmRes = await fetch('https://api.retellai.com/create-retell-llm', {
+      method:'POST',
+      headers:{'Authorization':'Bearer '+keys.retell_key,'Content-Type':'application/json'},
+      body: JSON.stringify({ general_prompt: script, model:'gpt-4o-mini' })
+    });
+    const llmData = await llmRes.json();
+    if (!llmData.llm_id) return {ok:false, msg:'LLM failed: '+JSON.stringify(llmData)};
+
+    // Step 2: Create the agent with the LLM
+    const agentRes = await fetch('https://api.retellai.com/create-agent', {
       method:'POST',
       headers:{'Authorization':'Bearer '+keys.retell_key,'Content-Type':'application/json'},
       body: JSON.stringify({
         agent_name: name + ' AI Receptionist',
-        response_engine:{type:'retell-llm'},
-        voice_id:'11labs-Lily',
-        language:'en-US',
-        general_prompt: script
+        response_engine: {type:'retell-llm', llm_id: llmData.llm_id},
+        voice_id: 'eleven_turbo_v2',
+        language: 'en-US'
       })
     });
-    const d = await r.json();
-    return d.agent_id ? {ok:true, agent_id:d.agent_id} : {ok:false, msg: JSON.stringify(d)};
+    const agentData = await agentRes.json();
+    return agentData.agent_id ? {ok:true, agent_id:agentData.agent_id} : {ok:false, msg:JSON.stringify(agentData)};
   } catch(e) { return {ok:false, msg:e.message}; }
 }
 
