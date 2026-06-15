@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Admin — Kingston Smile Dental</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@600&display=swap" rel="stylesheet"/>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+  import { getFirestore, collection, getDocs, doc, updateDoc, deleteDoc, query, orderBy, onSnapshot, where, getCountFromServer, serverTimestamp, addDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  import { getStorage, ref, uploadBytesResumable, getDownloadURL, listAll, deleteObject } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAUD5Ds0xf9jSd5OkNYuS1BtKu900AxNh8",
+    authDomain: "webv-tec-dental-os.firebaseapp.com",
+    projectId: "webv-tec-dental-os",
+    storageBucket: "webv-tec-dental-os.firebasestorage.app",
+    messagingSenderId: "821753520098",
+    appId: "1:821753520098:web:1b99c76d8cdb6c5bf9a3bb"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+  const storage = getStorage(app);
+
+  let currentUser = null;
+  let allBookings = [];
+  let filterStatus = 'all';
+  let searchTerm = '';
+
+  // AUTH STATE
+  onAuthStateChanged(auth, (user) => {
+    currentUser = user;
+    if (user) {
+      document.getElementById('login-screen').classList.add('hidden');
+      document.getElementById('dashboard').classList.remove('hidden');
+      document.getElementById('user-email').textContent = user.email;
+      initDashboard();
+    } else {
+      document.getElementById('login-screen').classList.remove('hidden');
+      document.getElementById('dashboard').classList.add('hidden');
+    }
+  });
+
+  // LOGIN
+  window.doLogin = async function() {
+    const email = document.getElementById('login-email').value.trim();
+    const pass = document.getElementById('login-pass').value;
+    const btn = document.getElementById('login-btn');
+    const err = document.getElementById('login-err');
+    err.textContent = '';
+    btn.disabled = true; btn.textContent = 'Signing in...';
+    try {
+      await signInWithEmailAndPassword(auth, email, pass);
+    } catch(e) {
+      err.textContent = 'Invalid email or password.';
+      btn.disabled = false; btn.textContent = 'Sign In';
+    }
+  };
+
+  window.doLogout = async function() {
+    await signOut(auth);
+  };
+
+  // INIT DASHBOARD
+  function initDashboard() {
+    loadBookings();
+    loadGallery();
+    loadStats();
+  }
+
+  // STATS
+  async function loadStats() {
+    try {
+      const snap = await getDocs(collection(db, 'bookings'));
+      const bookings = snap.docs.map(d => ({...d.data(), id: d.id}));
+      const total = bookings.length;
+      const pending = bookings.filter(b => b.status === 'pending').length;
+      const confirmed = bookings.filter(b => b.status === 'confirmed').length;
+      const today = new Date().toISOString().split('T')[0];
+      const todayCount = bookings.filter(b => b.date === today).length;
+      document.getElementById('stat-total').textContent = total;
+      document.getElementById('stat-pending').textContent = pending;
+      document.getElementById('stat-confirmed').textContent = confirmed;
+      document.getElementById('stat-today').textContent = todayCount;
+    } catch(e) { console.error(e); }
+  }
+
+  // BOOKINGS
+  async function loadBookings() {
+    document.getElementById('bookings-loading').classList.remove('hidden');
+    document.getElementById('bookings-table-wrap').classList.add('hidden');
+    try {
+      const q = query(collection(db, 'bookings'), orderBy('created_at', 'desc'));
+      onSnapshot(q, (snap) => {
+        allBookings = snap.docs.map(d => ({...d.data(), id: d.id}));
+        renderBookings();
+        loadStats();
+      });
+    } catch(e) {
+      document.getElementById('bookings-loading').innerHTML = '<p style="color:#E8614A">Failed to load bookings.</p>';
+    }
+    document.getElementById('bookings-loading').classList.add('hidden');
+    document.getElementById('bookings-table-wrap').classList.remove('hidden');
+  }
+
+  function renderBookings() {
+    let list = [...allBookings];
+    if (filterStatus !== 'all') list = list.filter(b => b.status === filterStatus);
+    if (searchTerm) {
+      const s = searchTerm.toLowerCase();
+      list = list.filter(b =>
+        (b.patient_name||'').toLowerCase().includes(s) ||
+        (b.phone||'').includes(s) ||
+        (b.service||'').toLowerCase().includes(s)
+      );
+    }
+    const tbody = document.getElementById('bookings-tbody');
+    if (list.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:40px;color:#9CA3AF">No bookings found</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = list.map(b => {
+      const statusClass = {pending:'badge-pending',confirmed:'badge-confirmed',cancelled:'badge-cancelled',completed:'badge-completed'}[b.status] || 'badge-pending';
+      const date = b.date ? formatDate(b.date) : '—';
+      const created = b.created_at?.toDate ? formatDateTime(b.created_at.toDate()) : '—';
+      return `
+      <tr>
+        <td>
+          <div class="patient-name">${esc(b.patient_name||'—')}</div>
+          <div class="patient-meta">${esc(b.phone||'')} ${b.email ? '· '+esc(b.email) : ''}</div>
+        </td>
+        <td><span class="service-tag">${esc(b.service||'—')}</span></td>
+        <td>${date} ${b.time ? '<br><span class="time-tag">'+esc(b.time)+'</span>' : ''}</td>
+        <td><span class="${statusClass} badge">${esc(b.status||'pending')}</span></td>
+        <td>${b.is_new_patient === 'yes' ? '<span class="new-badge">New</span>' : '<span style="color:#9CA3AF;font-size:0.8rem">Returning</span>'}</td>
+        <td style="font-size:0.8rem;color:#9CA3AF">${created}</td>
+        <td>
+          <div class="action-btns">
+            <button class="act-btn act-confirm" onclick="updateStatus('${b.id}','confirmed')" title="Confirm">✓</button>
+            <button class="act-btn act-complete" onclick="updateStatus('${b.id}','completed')" title="Complete">★</button>
+            <button class="act-btn act-cancel" onclick="updateStatus('${b.id}','cancelled')" title="Cancel">✗</button>
+            <button class="act-btn act-delete" onclick="deleteBooking('${b.id}')" title="Delete">🗑</button>
+          </div>
+        </td>
+      </tr>`;
+    }).join('');
+  }
+
+  window.setFilter = function(status) {
+    filterStatus = status;
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    event.target.classList.add('active');
+    renderBookings();
+  };
+
+  window.doSearch = function(val) {
+    searchTerm = val;
+    renderBookings();
+  };
+
+  window.updateStatus = async function(id, status) {
+    try {
+      await updateDoc(doc(db, 'bookings', id), { status, updated_at: serverTimestamp() });
+      showToast(`Booking marked as ${status}`);
+    } catch(e) { showToast('Error updating booking', true); }
+  };
+
+  window.deleteBooking = async function(id) {
+    if (!confirm('Delete this booking permanently?')) return;
+    try {
+      await deleteDoc(doc(db, 'bookings', id));
+      showToast('Booking deleted');
+    } catch(e) { showToast('Error deleting', true); }
+  };
+
+  // GALLERY
+  async function loadGallery() {
+    const grid = document.getElementById('admin-gallery');
+    grid.innerHTML = '<p style="color:#9CA3AF;font-size:0.875rem">Loading photos...</p>';
+    try {
+      const listRef = ref(storage, 'gallery/');
+      const result = await listAll(listRef);
+      if (result.items.length === 0) {
+        grid.innerHTML = '<p style="color:#9CA3AF;font-size:0.875rem">No photos uploaded yet.</p>';
+        return;
+      }
+      const items = await Promise.all(result.items.map(async item => ({
+        url: await getDownloadURL(item), ref: item
+      })));
+      grid.innerHTML = items.map((item, i) => `
+        <div class="gallery-item" id="gitem-${i}">
+          <img src="${item.url}" alt="Gallery photo"/>
+          <button class="gallery-delete" onclick="deletePhoto('${item.ref.fullPath}', ${i})">✕</button>
+        </div>
+      `).join('');
+    } catch(e) { grid.innerHTML = '<p style="color:#E8614A;font-size:0.875rem">Failed to load gallery.</p>'; }
+  }
+
+  window.deletePhoto = async function(path, i) {
+    if (!confirm('Delete this photo?')) return;
+    try {
+      await deleteObject(ref(storage, path));
+      document.getElementById(`gitem-${i}`)?.remove();
+      showToast('Photo deleted');
+    } catch(e) { showToast('Error deleting photo', true); }
+  };
+
+  window.uploadPhotos = async function(files) {
+    const progress = document.getElementById('upload-progress');
+    progress.classList.remove('hidden');
+    const bar = document.getElementById('upload-bar');
+    let done = 0;
+    for (const file of files) {
+      const storageRef = ref(storage, `gallery/${Date.now()}_${file.name}`);
+      await new Promise((res, rej) => {
+        const task = uploadBytesResumable(storageRef, file);
+        task.on('state_changed',
+          snap => { bar.style.width = (snap.bytesTransferred / snap.totalBytes * 100) + '%'; },
+          rej, res
+        );
+      });
+      done++;
+    }
+    progress.classList.add('hidden');
+    bar.style.width = '0';
+    showToast(`${done} photo(s) uploaded`);
+    loadGallery();
+  };
+
+  // HELPERS
+  function formatDate(d) {
+    if (!d) return '—';
+    const date = new Date(d);
+    return date.toLocaleDateString('en-JM', { month: 'short', day: 'numeric', year: 'numeric' });
+  }
+  function formatDateTime(d) {
+    return d.toLocaleDateString('en-JM', { month: 'short', day: 'numeric' }) + ' ' +
+      d.toLocaleTimeString('en-JM', { hour: '2-digit', minute: '2-digit' });
+  }
+  function esc(s) { return String(s).replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+  function showToast(msg, isErr = false) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.style.background = isErr ? '#E8614A' : '#3AAFA9';
+    t.classList.remove('hidden');
+    setTimeout(() => t.classList.add('hidden'), 3000);
+  }
+
+  window.switchTab = function(tab) {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+    document.getElementById(`tab-${tab}`).classList.remove('hidden');
+    event.target.classList.add('active');
+  };
+
+  // Expose login on enter key
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !document.getElementById('login-screen').classList.contains('hidden')) {
+      window.doLogin();
+    }
+  });
+</script>
+<style>
+  :root {
+    --navy: #0B1F3A;
+    --navy-light: #152d52;
+    --white: #F8F5F0;
+    --coral: #E8614A;
+    --coral-dark: #c94e39;
+    --gold: #C9A84C;
+    --teal: #3AAFA9;
+    --grey: #6B7280;
+    --border: #E5E7EB;
+    --sidebar-w: 240px;
+    --bg: #F3F4F6;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; font-family: 'Inter', sans-serif; background: var(--bg); color: #111827; }
+  .hidden { display: none !important; }
+
+  /* LOGIN */
+  #login-screen {
+    min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, var(--navy) 0%, #1a3a6e 100%);
+    padding: 20px;
+  }
+  .login-card {
+    background: #fff; border-radius: 20px; padding: 48px 40px;
+    width: 100%; max-width: 400px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  }
+  .login-logo { display: flex; align-items: center; gap: 10px; margin-bottom: 32px; }
+  .login-icon { width: 40px; height: 40px; border-radius: 50%; background: var(--coral); display: flex; align-items: center; justify-content: center; font-size: 1.2rem; }
+  .login-brand { font-family: 'Playfair Display', serif; font-size: 1.1rem; color: var(--navy); }
+  .login-title { font-size: 1.5rem; font-weight: 700; color: var(--navy); margin-bottom: 6px; }
+  .login-sub { color: var(--grey); font-size: 0.875rem; margin-bottom: 28px; }
+  .login-label { display: block; font-size: 0.825rem; font-weight: 600; color: var(--navy); margin-bottom: 7px; }
+  .login-input {
+    width: 100%; padding: 12px 16px; border: 1.5px solid var(--border);
+    border-radius: 10px; font-family: 'Inter', sans-serif; font-size: 0.95rem;
+    margin-bottom: 16px; outline: none; transition: border-color 0.2s;
+  }
+  .login-input:focus { border-color: var(--coral); }
+  .login-btn {
+    width: 100%; background: var(--coral); color: #fff; border: none;
+    padding: 14px; border-radius: 25px; font-size: 1rem; font-weight: 700;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .login-btn:hover { background: var(--coral-dark); }
+  .login-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+  .login-err { color: var(--coral); font-size: 0.825rem; margin-top: 10px; min-height: 18px; }
+
+  /* DASHBOARD */
+  #dashboard { display: flex; min-height: 100vh; }
+
+  /* SIDEBAR */
+  .sidebar {
+    width: var(--sidebar-w); background: var(--navy);
+    display: flex; flex-direction: column; flex-shrink: 0;
+    position: fixed; top: 0; left: 0; bottom: 0; z-index: 100;
+    transition: transform 0.3s;
+  }
+  .sidebar-logo {
+    padding: 24px 20px 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .sidebar-logo-icon { width: 34px; height: 34px; border-radius: 50%; background: var(--coral); display: flex; align-items: center; justify-content: center; font-size: 1rem; flex-shrink: 0; }
+  .sidebar-logo-text { color: #fff; font-family: 'Playfair Display', serif; font-size: 0.95rem; line-height: 1.3; }
+  .sidebar-logo-sub { color: rgba(255,255,255,0.5); font-size: 0.7rem; display: block; }
+  .sidebar-nav { flex: 1; padding: 16px 0; overflow-y: auto; }
+  .nav-section-label {
+    color: rgba(255,255,255,0.35); font-size: 0.68rem; text-transform: uppercase;
+    letter-spacing: 0.08em; font-weight: 700; padding: 14px 20px 6px;
+  }
+  .sidebar-link {
+    display: flex; align-items: center; gap: 10px;
+    padding: 11px 20px; color: rgba(255,255,255,0.65);
+    text-decoration: none; font-size: 0.875rem; font-weight: 500;
+    cursor: pointer; transition: all 0.15s; border: none; background: none; width: 100%; text-align: left;
+  }
+  .sidebar-link:hover { color: #fff; background: rgba(255,255,255,0.07); }
+  .sidebar-link.active { color: #fff; background: rgba(232,97,74,0.2); border-right: 3px solid var(--coral); }
+  .sidebar-link .nav-icon { font-size: 1rem; width: 20px; text-align: center; flex-shrink: 0; }
+  .sidebar-bottom {
+    padding: 16px 20px; border-top: 1px solid rgba(255,255,255,0.1);
+  }
+  .user-info { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+  .user-avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--teal); display: flex; align-items: center; justify-content: center; font-size: 0.85rem; color: #fff; flex-shrink: 0; }
+  .user-email { color: rgba(255,255,255,0.65); font-size: 0.78rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .logout-btn {
+    width: 100%; background: rgba(232,97,74,0.15); border: 1px solid rgba(232,97,74,0.3);
+    color: var(--coral); padding: 9px; border-radius: 8px;
+    font-size: 0.825rem; font-weight: 600; cursor: pointer; transition: all 0.2s;
+  }
+  .logout-btn:hover { background: rgba(232,97,74,0.3); }
+  .mobile-toggle {
+    display: none; position: fixed; top: 16px; left: 16px; z-index: 200;
+    width: 40px; height: 40px; background: var(--navy); border: none;
+    border-radius: 10px; flex-direction: column; gap: 5px;
+    align-items: center; justify-content: center; cursor: pointer;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+  }
+  .mobile-toggle span { display: block; width: 18px; height: 2px; background: #fff; }
+
+  /* MAIN */
+  .main {
+    margin-left: var(--sidebar-w); flex: 1; min-width: 0;
+    display: flex; flex-direction: column;
+  }
+  .topbar {
+    background: #fff; border-bottom: 1px solid var(--border);
+    padding: 16px 28px; display: flex; align-items: center;
+    justify-content: space-between; position: sticky; top: 0; z-index: 50;
+  }
+  .topbar-title { font-size: 1.1rem; font-weight: 700; color: var(--navy); }
+  .topbar-right { display: flex; align-items: center; gap: 12px; }
+  .view-site-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--navy); color: #fff; text-decoration: none;
+    padding: 8px 16px; border-radius: 20px; font-size: 0.8rem; font-weight: 600;
+    transition: background 0.2s;
+  }
+  .view-site-btn:hover { background: var(--navy-light); }
+  .content { padding: 28px; }
+
+  /* STATS */
+  .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 28px; }
+  .stat-card {
+    background: #fff; border-radius: 14px; padding: 22px;
+    display: flex; align-items: center; gap: 16px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  }
+  .stat-icon { width: 46px; height: 46px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; flex-shrink: 0; }
+  .si-orange { background: #FEF3EE; }
+  .si-blue { background: #EEF3FE; }
+  .si-green { background: #EEFEF5; }
+  .si-purple { background: #F5EEFE; }
+  .stat-val { font-size: 1.8rem; font-weight: 700; color: var(--navy); line-height: 1; }
+  .stat-lbl { font-size: 0.78rem; color: var(--grey); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.04em; font-weight: 600; }
+
+  /* TABS */
+  .tabs { display: flex; gap: 4px; background: #fff; border-radius: 12px; padding: 6px; margin-bottom: 24px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+  .tab-btn {
+    flex: 1; padding: 10px; border: none; border-radius: 8px;
+    font-size: 0.85rem; font-weight: 600; cursor: pointer;
+    background: transparent; color: var(--grey); transition: all 0.2s;
+  }
+  .tab-btn.active { background: var(--navy); color: #fff; }
+
+  /* BOOKINGS TABLE */
+  .section-card { background: #fff; border-radius: 16px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+  .card-header { padding: 20px 24px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-wrap: gap 12px; gap: 12px; }
+  .card-title { font-size: 1rem; font-weight: 700; color: var(--navy); }
+  .header-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+  .search-input {
+    padding: 8px 14px; border: 1.5px solid var(--border); border-radius: 20px;
+    font-size: 0.85rem; font-family: 'Inter', sans-serif; outline: none;
+    transition: border-color 0.2s; min-width: 200px;
+  }
+  .search-input:focus { border-color: var(--teal); }
+  .filter-btn {
+    padding: 7px 14px; border: 1.5px solid var(--border); border-radius: 20px;
+    background: transparent; font-size: 0.8rem; font-weight: 600; cursor: pointer;
+    color: var(--grey); transition: all 0.2s;
+  }
+  .filter-btn.active { background: var(--navy); color: #fff; border-color: var(--navy); }
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; min-width: 700px; }
+  th {
+    padding: 12px 16px; text-align: left; font-size: 0.75rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.05em; color: var(--grey);
+    background: #F9FAFB; border-bottom: 1px solid var(--border);
+  }
+  td { padding: 14px 16px; border-bottom: 1px solid #F3F4F6; font-size: 0.875rem; vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #FAFAFA; }
+  .patient-name { font-weight: 600; color: var(--navy); }
+  .patient-meta { color: var(--grey); font-size: 0.78rem; margin-top: 2px; }
+  .service-tag { background: #EEF3FE; color: #3B5998; padding: 4px 10px; border-radius: 12px; font-size: 0.78rem; font-weight: 600; text-transform: capitalize; }
+  .time-tag { color: var(--grey); font-size: 0.78rem; }
+  .badge { padding: 4px 10px; border-radius: 12px; font-size: 0.78rem; font-weight: 700; text-transform: capitalize; }
+  .badge-pending { background: #FEF3C7; color: #92400E; }
+  .badge-confirmed { background: #D1FAE5; color: #065F46; }
+  .badge-cancelled { background: #FEE2E2; color: #991B1B; }
+  .badge-completed { background: #E0E7FF; color: #3730A3; }
+  .new-badge { background: #FEF3EE; color: var(--coral); padding: 3px 8px; border-radius: 10px; font-size: 0.75rem; font-weight: 700; }
+  .action-btns { display: flex; gap: 6px; }
+  .act-btn { width: 30px; height: 30px; border-radius: 7px; border: none; cursor: pointer; font-size: 0.85rem; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
+  .act-confirm { background: #D1FAE5; color: #065F46; }
+  .act-confirm:hover { background: #A7F3D0; }
+  .act-complete { background: #E0E7FF; color: #3730A3; }
+  .act-complete:hover { background: #C7D2FE; }
+  .act-cancel { background: #FEE2E2; color: #991B1B; }
+  .act-cancel:hover { background: #FECACA; }
+  .act-delete { background: #F3F4F6; color: var(--grey); }
+  .act-delete:hover { background: #E5E7EB; }
+
+  /* GALLERY ADMIN */
+  .upload-zone {
+    border: 2px dashed var(--border); border-radius: 14px; padding: 40px 20px;
+    text-align: center; cursor: pointer; transition: all 0.2s; margin-bottom: 24px;
+    background: #FAFAFA;
+  }
+  .upload-zone:hover, .upload-zone.dragover { border-color: var(--teal); background: #F0FFFE; }
+  .upload-icon { font-size: 2.5rem; margin-bottom: 12px; }
+  .upload-text { color: var(--navy); font-weight: 600; margin-bottom: 4px; }
+  .upload-sub { color: var(--grey); font-size: 0.825rem; }
+  .upload-progress { margin-bottom: 20px; }
+  .progress-bar-bg { height: 6px; background: var(--border); border-radius: 6px; overflow: hidden; }
+  .progress-bar { height: 100%; background: var(--teal); border-radius: 6px; transition: width 0.3s; width: 0; }
+  .admin-gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; }
+  .gallery-item { position: relative; border-radius: 10px; overflow: hidden; aspect-ratio: 4/3; background: var(--border); }
+  .gallery-item img { width: 100%; height: 100%; object-fit: cover; }
+  .gallery-delete {
+    position: absolute; top: 6px; right: 6px;
+    width: 26px; height: 26px; border-radius: 50%;
+    background: rgba(0,0,0,0.6); color: #fff; border: none;
+    cursor: pointer; font-size: 0.7rem; display: flex; align-items: center;
+    justify-content: center; opacity: 0; transition: opacity 0.2s;
+  }
+  .gallery-item:hover .gallery-delete { opacity: 1; }
+
+  /* TOAST */
+  #toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: var(--teal); color: #fff; padding: 12px 28px; border-radius: 25px;
+    font-size: 0.875rem; font-weight: 600; z-index: 9999;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.2); transition: opacity 0.3s;
+  }
+  #toast.hidden { display: none; }
+
+  /* RESPONSIVE */
+  @media(max-width:1024px) {
+    .stats-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media(max-width:768px) {
+    .sidebar { transform: translateX(-100%); }
+    .sidebar.open { transform: translateX(0); }
+    .main { margin-left: 0; }
+    .mobile-toggle { display: flex; }
+    .content { padding: 16px; }
+    .topbar { padding: 14px 16px 14px 64px; }
+    .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+    .card-header { flex-direction: column; align-items: flex-start; }
+    .header-actions { width: 100%; flex-direction: column; }
+    .search-input { width: 100%; min-width: unset; }
+    .tabs { flex-direction: column; }
+  }
+  @media(max-width:480px) {
+    .stats-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+    .stat-card { padding: 16px 12px; gap: 10px; }
+    .stat-val { font-size: 1.4rem; }
+  }
+</style>
+</head>
+<body>
+
+<!-- TOAST -->
+<div id="toast" class="hidden"></div>
+
+<!-- LOGIN SCREEN -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="login-icon">🦷</div>
+      <div>
+        <div class="login-brand">Kingston Smile Dental</div>
+        <span style="color:#9CA3AF;font-size:0.75rem">Admin Portal</span>
+      </div>
+    </div>
+    <div class="login-title">Welcome Back</div>
+    <div class="login-sub">Sign in to manage bookings and settings</div>
+    <label class="login-label" for="login-email">Email</label>
+    <input type="email" id="login-email" class="login-input" placeholder="admin@kingstonsmile.com"/>
+    <label class="login-label" for="login-pass">Password</label>
+    <input type="password" id="login-pass" class="login-input" placeholder="••••••••"/>
+    <button class="login-btn" id="login-btn" onclick="doLogin()">Sign In</button>
+    <div class="login-err" id="login-err"></div>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboard" class="hidden">
+  <!-- Mobile toggle -->
+  <button class="mobile-toggle" onclick="document.querySelector('.sidebar').classList.toggle('open')">
+    <span></span><span></span><span></span>
+  </button>
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-icon">🦷</div>
+      <div class="sidebar-logo-text">
+        Kingston Smile
+        <span class="sidebar-logo-sub">Admin Dashboard</span>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Main</div>
+      <button class="sidebar-link active" onclick="switchTab('bookings');setActiveNav(this)">
+        <span class="nav-icon">📅</span> Bookings
+      </button>
+      <button class="sidebar-link" onclick="switchTab('gallery');setActiveNav(this)">
+        <span class="nav-icon">🖼</span> Gallery Photos
+      </button>
+      <div class="nav-section-label">Links</div>
+      <a href="index.html" target="_blank" class="sidebar-link">
+        <span class="nav-icon">🌐</span> View Website
+      </a>
+    </nav>
+    <div class="sidebar-bottom">
+      <div class="user-info">
+        <div class="user-avatar">👤</div>
+        <div class="user-email" id="user-email">—</div>
+      </div>
+      <button class="logout-btn" onclick="doLogout()">Sign Out</button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+    <div class="topbar">
+      <div class="topbar-title" id="topbar-label">Bookings</div>
+      <div class="topbar-right">
+        <a href="index.html" target="_blank" class="view-site-btn">🌐 View Site</a>
+      </div>
+    </div>
+
+    <div class="content">
+      <!-- STATS -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon si-blue">📅</div>
+          <div>
+            <div class="stat-val" id="stat-total">—</div>
+            <div class="stat-lbl">Total Bookings</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon si-orange">⏳</div>
+          <div>
+            <div class="stat-val" id="stat-pending">—</div>
+            <div class="stat-lbl">Pending</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon si-green">✅</div>
+          <div>
+            <div class="stat-val" id="stat-confirmed">—</div>
+            <div class="stat-lbl">Confirmed</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon si-purple">📆</div>
+          <div>
+            <div class="stat-val" id="stat-today">—</div>
+            <div class="stat-lbl">Today</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- BOOKINGS TAB -->
+      <div id="tab-bookings" class="tab-content">
+        <div class="section-card">
+          <div class="card-header">
+            <div class="card-title">All Bookings</div>
+            <div class="header-actions">
+              <input type="text" class="search-input" placeholder="🔍 Search name, phone, service..." oninput="doSearch(this.value)"/>
+              <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                <button class="filter-btn active" onclick="setFilter('all')">All</button>
+                <button class="filter-btn" onclick="setFilter('pending')">Pending</button>
+                <button class="filter-btn" onclick="setFilter('confirmed')">Confirmed</button>
+                <button class="filter-btn" onclick="setFilter('completed')">Completed</button>
+                <button class="filter-btn" onclick="setFilter('cancelled')">Cancelled</button>
+              </div>
+            </div>
+          </div>
+          <div id="bookings-loading" class="hidden" style="padding:40px;text-align:center;color:#9CA3AF">Loading...</div>
+          <div id="bookings-table-wrap" class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Patient</th>
+                  <th>Service</th>
+                  <th>Date / Time</th>
+                  <th>Status</th>
+                  <th>Type</th>
+                  <th>Booked</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="bookings-tbody">
+                <tr><td colspan="7" style="text-align:center;padding:40px;color:#9CA3AF">Loading bookings...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- GALLERY TAB -->
+      <div id="tab-gallery" class="tab-content hidden">
+        <div class="section-card">
+          <div class="card-header">
+            <div class="card-title">Gallery Photos</div>
+          </div>
+          <div style="padding:24px;">
+            <div class="upload-zone" id="drop-zone"
+              onclick="document.getElementById('photo-upload').click()"
+              ondragover="event.preventDefault();this.classList.add('dragover')"
+              ondragleave="this.classList.remove('dragover')"
+              ondrop="handleDrop(event)">
+              <div class="upload-icon">📸</div>
+              <div class="upload-text">Click to upload or drag & drop</div>
+              <div class="upload-sub">JPG, PNG, WebP · Multiple files supported</div>
+              <input type="file" id="photo-upload" multiple accept="image/*" style="display:none" onchange="uploadPhotos(this.files)"/>
+            </div>
+            <div class="upload-progress hidden" id="upload-progress">
+              <div style="font-size:0.825rem;color:var(--grey);margin-bottom:8px;">Uploading...</div>
+              <div class="progress-bar-bg"><div class="progress-bar" id="upload-bar"></div></div>
+            </div>
+            <div id="admin-gallery" class="admin-gallery-grid">
+              <p style="color:#9CA3AF;font-size:0.875rem">Loading photos...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<script>
+  function handleDrop(e) {
+    e.preventDefault();
+    document.getElementById('drop-zone').classList.remove('dragover');
+    const files = e.dataTransfer.files;
+    if (files.length) uploadPhotos(files);
+  }
+  function setActiveNav(el) {
+    document.querySelectorAll('.sidebar-link').forEach(b => b.classList.remove('active'));
+    el.classList.add('active');
+    const labels = { bookings: 'Bookings', gallery: 'Gallery Photos' };
+    const tab = el.textContent.trim().toLowerCase().replace(/\s+/g,'').replace('galleryphotos','gallery').replace('bookings','bookings');
+    document.getElementById('topbar-label').textContent = el.textContent.trim().replace(/[📅🖼🌐]/g,'').trim();
+  }
+  // Close sidebar on mobile when clicking outside
+  document.addEventListener('click', e => {
+    const sidebar = document.querySelector('.sidebar');
+    const toggle = document.querySelector('.mobile-toggle');
+    if (sidebar && sidebar.classList.contains('open') && !sidebar.contains(e.target) && !toggle.contains(e.target)) {
+      sidebar.classList.remove('open');
+    }
+  });
+</script>
+</body>
+</html>
