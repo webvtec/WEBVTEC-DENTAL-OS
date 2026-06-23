@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Kingston Smile Dental — Kingston, Jamaica</title>
+<title>Canaan Dental Care — Ocho Rios, Jamaica</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
 
@@ -47,7 +47,7 @@
       }
       grid.innerHTML = urls.map(url => `
         <div class="photo-card">
-          <img src="${url}" alt="Kingston Smile Dental" loading="lazy"/>
+          <img src="${url}" alt="Canaan Dental Care" loading="lazy"/>
         </div>
       `).join('');
     } catch(e) {
@@ -94,6 +94,7 @@
   --ink-mid:  #1C2E4A;
   --gold:     #C8A96E;
   --gold-lt:  #E2CC9E;
+  --gold-glow: #D4B97A;
   --white:    #FFFFFF;
   --warm:     #F7F4EF;
   --teal:     #1A6B5A;
@@ -117,9 +118,10 @@ body {
 nav {
   position: fixed; top: 0; width: 100%; z-index: 1000;
   height: var(--nav-h);
-  background: rgba(10,22,40,0.96);
-  backdrop-filter: blur(12px);
-  border-bottom: 1px solid rgba(200,169,110,0.18);
+  background: rgba(10,22,40,0.92);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(200,169,110,0.12);
   display: flex; align-items: center;
   padding: 0 6%;
   justify-content: space-between;
@@ -155,14 +157,15 @@ nav {
 .nav-links a:hover { color: var(--gold); }
 .nav-cta {
   color: var(--gold) !important;
-  border: 1px solid var(--gold);
-  padding: 9px 22px;
-  letter-spacing: 0.07em;
-  transition: all 0.2s !important;
+  border: 1px solid rgba(200,169,110,0.6);
+  padding: 9px 24px;
+  letter-spacing: 0.08em;
+  transition: all 0.35s cubic-bezier(0.23, 1, 0.32, 1) !important;
 }
 .nav-cta:hover {
   background: var(--gold) !important;
   color: var(--ink) !important;
+  box-shadow: 0 4px 20px rgba(200,169,110,0.3) !important;
 }
 .nav-hamburger { display: none; flex-direction: column; gap: 5px; cursor: pointer; }
 .nav-hamburger span { display: block; width: 22px; height: 1.5px; background: var(--white); transition: 0.3s; }
@@ -194,71 +197,104 @@ nav {
 .hero-photo::after {
   content: '';
   position: absolute; inset: 0;
-  background: linear-gradient(105deg, rgba(10,22,40,0.88) 0%, rgba(10,22,40,0.72) 55%, rgba(10,22,40,0.30) 100%);
+  background: linear-gradient(135deg, rgba(10,22,40,0.94) 0%, rgba(10,22,40,0.82) 40%, rgba(10,22,40,0.50) 80%, rgba(10,22,40,0.35) 100%);
+}
+/* Animated gold light sweep */
+.hero-photo::before {
+  content: '';
+  position: absolute; inset: 0; z-index: 1;
+  background: linear-gradient(105deg, transparent 40%, rgba(200,169,110,0.04) 50%, transparent 60%);
+  animation: lightSweep 8s ease-in-out infinite;
+}
+@keyframes lightSweep {
+  0%, 100% { opacity: 0; transform: translateX(-100%); }
+  50% { opacity: 1; transform: translateX(100%); }
 }
 .hero-inner {
   position: relative; z-index: 2;
   max-width: 1200px; width: 100%;
   margin: 0 auto;
-  padding: 100px 6%;
+  padding: 120px 6% 100px;
   display: grid;
   grid-template-columns: 1fr 420px;
   gap: 64px;
   align-items: center;
 }
+/* Staggered entrance */
+.hero-left > * {
+  opacity: 0;
+  transform: translateY(28px);
+  animation: heroFadeUp 0.9s cubic-bezier(0.23, 1, 0.32, 1) forwards;
+}
+.hero-left > *:nth-child(1) { animation-delay: 0.15s; }
+.hero-left > *:nth-child(2) { animation-delay: 0.3s; }
+.hero-left > *:nth-child(3) { animation-delay: 0.45s; }
+.hero-left > *:nth-child(4) { animation-delay: 0.6s; }
+.hero-left > *:nth-child(5) { animation-delay: 0.75s; }
+.hero-left > *:nth-child(6) { animation-delay: 0.9s; }
+@keyframes heroFadeUp {
+  to { opacity: 1; transform: translateY(0); }
+}
 .hero-eyebrow {
-  display: flex; align-items: center; gap: 12px;
-  margin-bottom: 28px;
+  display: flex; align-items: center; gap: 16px;
+  margin-bottom: 36px;
 }
 .hero-eyebrow-line {
-  width: 36px; height: 1px; background: var(--gold);
+  width: 48px; height: 1px;
+  background: linear-gradient(90deg, var(--gold), transparent);
 }
 .hero-eyebrow-text {
   color: var(--gold);
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   font-weight: 500;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.22em;
   text-transform: uppercase;
 }
 .hero h1 {
   font-family: 'DM Serif Display', serif;
-  font-size: clamp(2.6rem, 5.5vw, 4.4rem);
+  font-size: clamp(2.8rem, 5.8vw, 4.8rem);
   color: var(--white);
-  line-height: 1.08;
-  margin-bottom: 24px;
-  max-width: 560px;
+  line-height: 1.04;
+  margin-bottom: 28px;
+  max-width: 600px;
+  letter-spacing: -0.01em;
 }
 .hero h1 em {
   color: var(--gold);
   font-style: italic;
+  text-shadow: 0 0 60px rgba(200,169,110,0.2);
 }
 .hero-sub {
-  color: rgba(255,255,255,0.65);
+  color: rgba(255,255,255,0.58);
   font-size: 1.05rem;
-  line-height: 1.75;
+  line-height: 1.8;
   max-width: 480px;
-  margin-bottom: 44px;
+  margin-bottom: 48px;
+  font-weight: 300;
 }
 .hero-actions { display: flex; gap: 16px; flex-wrap: wrap; align-items: center; }
 .btn-primary {
-  background: var(--gold);
+  background: linear-gradient(135deg, var(--gold) 0%, var(--gold-lt) 100%);
   color: var(--ink);
-  border: 1.5px solid var(--gold);
-  padding: 14px 34px;
-  font-size: 0.82rem;
+  border: none;
+  padding: 16px 38px;
+  font-size: 0.78rem;
   font-weight: 600;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   cursor: pointer;
   text-decoration: none;
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  transition: all 0.22s;
+  transition: all 0.35s cubic-bezier(0.23, 1, 0.32, 1);
+  box-shadow: 0 4px 24px rgba(200,169,110,0.25);
 }
 .btn-primary:hover {
-  background: transparent;
-  color: var(--gold);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(200,169,110,0.35);
+  background: linear-gradient(135deg, var(--gold-lt) 0%, var(--gold) 100%);
+  color: var(--ink);
 }
 .btn-ghost {
   background: transparent;
@@ -281,29 +317,37 @@ nav {
   color: var(--white);
 }
 .hero-rule {
-  width: 100%; height: 1px; background: var(--rule); margin: 44px 0;
+  width: 100%; height: 1px;
+  background: linear-gradient(90deg, var(--gold), rgba(200,169,110,0.15), transparent);
+  margin: 52px 0;
 }
-.hero-stats { display: flex; gap: 48px; }
+.hero-stats { display: flex; gap: 56px; }
 .stat-num {
   font-family: 'DM Serif Display', serif;
-  font-size: 2rem;
+  font-size: 2.2rem;
   color: var(--gold);
   line-height: 1;
+  text-shadow: 0 0 40px rgba(200,169,110,0.15);
 }
 .stat-label {
-  font-size: 0.72rem;
-  color: rgba(255,255,255,0.5);
+  font-size: 0.68rem;
+  color: rgba(255,255,255,0.4);
   text-transform: uppercase;
-  letter-spacing: 0.08em;
-  margin-top: 5px;
+  letter-spacing: 0.12em;
+  margin-top: 6px;
+  font-weight: 400;
 }
 
 /* HERO APPOINTMENT CARD */
 .hero-card {
-  background: rgba(255,255,255,0.06);
-  backdrop-filter: blur(24px);
-  border: 1px solid rgba(200,169,110,0.3);
-  padding: 40px 36px;
+  background: rgba(255,255,255,0.04);
+  backdrop-filter: blur(32px);
+  -webkit-backdrop-filter: blur(32px);
+  border: 1px solid rgba(200,169,110,0.2);
+  padding: 44px 38px;
+  animation: heroFadeUp 0.9s cubic-bezier(0.23, 1, 0.32, 1) 0.5s forwards;
+  opacity: 0;
+  transform: translateY(28px);
 }
 .hero-card-label {
   font-size: 0.7rem;
@@ -444,14 +488,18 @@ nav {
 .service-card {
   width: 280px;
   flex-shrink: 0;
-  border: 1px solid rgba(255,255,255,0.1);
-  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.02);
   padding: 0;
-  transition: border-color 0.25s;
+  transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
   cursor: default;
   overflow: hidden;
 }
-.service-card:hover { border-color: rgba(200,169,110,0.5); }
+.service-card:hover {
+  border-color: rgba(200,169,110,0.4);
+  transform: translateY(-4px);
+  box-shadow: 0 16px 48px rgba(0,0,0,0.2);
+}
 .service-card-img {
   width: 100%;
   height: 170px;
@@ -871,7 +919,7 @@ footer {
     <div class="nav-logo-mark">
       <img src="https://cdn-icons-png.flaticon.com/512/2913/2913465.png" alt="tooth"/>
     </div>
-    <span class="nav-logo-text">Kingston Smile Dental</span>
+    <span class="nav-logo-text">Canaan Dental Care</span>
   </a>
   <div class="nav-links">
     <a href="#services">Services</a>
@@ -899,35 +947,45 @@ footer {
     <div class="hero-left">
       <div class="hero-eyebrow">
         <div class="hero-eyebrow-line"></div>
-        <span class="hero-eyebrow-text">Kingston, Jamaica &mdash; Est. 2010</span>
+        <span class="hero-eyebrow-text">Ocho Rios, St. Ann</span>
       </div>
-      <h1>Your <em>Brightest Smile</em><br/>Starts Here</h1>
-      <p class="hero-sub">Expert dental care delivered with warmth and Jamaican hospitality — from routine cleanings to complete smile transformations.</p>
+      <h1>Changing <em>Smiles</em><br/>&amp; Lives, Everyday</h1>
+      <p class="hero-sub">Complete dental care for the whole family — from routine cleanings to advanced surgery. Jamaica's #1 accessible clinic, right in the heart of Ocho Rios.</p>
       <div class="hero-actions">
         <a href="#booking" class="btn-primary">
           Book Appointment
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
         </a>
-        <a href="https://maps.google.com?q=Kingston+Smile+Dental+Kingston+Jamaica" target="_blank" class="btn-ghost">
-          Click to Find Us Now
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 110-5 2.5 2.5 0 010 5z"/></svg>
+        <a href="https://wa.me/18768718796" target="_blank" class="btn-ghost">
+          WhatsApp Us Now
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>
         </a>
       </div>
       <div class="hero-rule"></div>
       <div class="hero-stats">
         <div>
-          <div class="stat-num">15+</div>
-          <div class="stat-label">Years Experience</div>
+          <div class="stat-num">10+</div>
+          <div class="stat-label">Dental Services</div>
         </div>
         <div>
-          <div class="stat-num">5,000+</div>
-          <div class="stat-label">Happy Patients</div>
+          <div class="stat-num">#1</div>
+          <div class="stat-label">Accessible Clinic</div>
         </div>
         <div>
           <div class="stat-num">24/7</div>
           <div class="stat-label">AI Booking</div>
         </div>
       </div>
+    </div>
+
+    <!-- HERO CARD -->
+    <div class="hero-card">
+      <div class="hero-card-label">Dr. Rawlin Duffus</div>
+      <img class="hero-card-img" src="https://images.unsplash.com/photo-1629909615957-be38d48fbbe4?w=560&q=80" alt="Canaan Dental Care"/>
+      <div class="hero-card-heading">Dental Surgeon &amp; Family Dentistry</div>
+      <div class="hero-card-sub">Professional care in a friendly, fully accessible environment. Special needs patients welcome.</div>
+      <div class="hero-card-pill">Now Accepting Patients</div>
+      <a href="tel:+18766790024" class="hero-card-cta">Call (876) 679-0024 &rarr;</a>
     </div>
 
   </div>
@@ -945,56 +1003,80 @@ footer {
         <h2 class="section-title" style="color:var(--white)">Comprehensive<br/>Dental Care</h2>
       </div>
       <div class="services-header-right">
-        <p class="section-sub">From preventive cleanings to complete smile makeovers — all under one roof, with compassionate hands.</p>
+        <p class="section-sub">From preventive cleanings to advanced periodontal surgery and teeth whitening — all under one roof, with compassionate hands.</p>
       </div>
     </div>
 
     <div class="services-scroll-wrap">
       <div class="services-track">
         <div class="service-card">
-          <img class="service-card-img" src="https://images.unsplash.com/photo-1609840114035-3c981b782dfe?w=560&q=80" alt="Cleaning & Hygiene"/>
+          <img class="service-card-img" src="https://images.unsplash.com/photo-1609840114035-3c981b782dfe?w=560&q=80" alt="Dental Cleaning"/>
           <div class="service-card-body">
-            <div class="service-card-name">Cleaning &amp; Hygiene</div>
-            <div class="service-card-desc">Professional scaling, polishing, and preventive care to keep your smile fresh and healthy.</div>
+            <div class="service-card-name">Dental Cleaning</div>
+            <div class="service-card-desc">Professional scaling, polishing, and preventive care to keep your teeth and gums healthy.</div>
           </div>
         </div>
         <div class="service-card">
-          <img class="service-card-img" src="https://images.unsplash.com/photo-1606811841689-23dfddce3e95?w=560&q=80" alt="Dental Checkup"/>
+          <img class="service-card-img" src="https://images.unsplash.com/photo-1629909613654-28e377c37b09?w=560&q=80" alt="Dental Filling"/>
           <div class="service-card-body">
-            <div class="service-card-name">Dental Checkup</div>
-            <div class="service-card-desc">Comprehensive oral health exam with digital X-rays and personalised treatment planning.</div>
+            <div class="service-card-name">Dental Filling</div>
+            <div class="service-card-desc">Tooth-coloured composite fillings that restore function and blend naturally with your smile.</div>
           </div>
         </div>
         <div class="service-card">
-          <img class="service-card-img" src="https://images.unsplash.com/photo-1629909613654-28e377c37b09?w=560&q=80" alt="Fillings"/>
+          <img class="service-card-img" src="https://images.unsplash.com/photo-1606811841689-23dfddce3e95?w=560&q=80" alt="Dental X-rays"/>
           <div class="service-card-body">
-            <div class="service-card-name">Fillings &amp; Restoration</div>
-            <div class="service-card-desc">Tooth-coloured composite fillings that blend seamlessly and restore function beautifully.</div>
+            <div class="service-card-name">Dental X-rays</div>
+            <div class="service-card-desc">Digital X-ray imaging for accurate diagnosis and personalised treatment planning.</div>
           </div>
         </div>
         <div class="service-card">
-          <img class="service-card-img" src="https://images.unsplash.com/photo-1606265752439-1f18756aa5fc?w=560&q=80" alt="Crowns"/>
+          <img class="service-card-img" src="https://images.unsplash.com/photo-1588776814546-1ffcf47267a5?w=560&q=80" alt="Dental Extraction"/>
           <div class="service-card-body">
-            <div class="service-card-name">Crowns &amp; Bridges</div>
-            <div class="service-card-desc">Custom porcelain crowns and fixed bridges engineered for strength and natural appearance.</div>
+            <div class="service-card-name">Dental Extraction</div>
+            <div class="service-card-desc">Safe, gentle tooth removal with proper anaesthesia and aftercare guidance.</div>
           </div>
         </div>
         <div class="service-card">
-          <img class="service-card-img" src="https://images.unsplash.com/photo-1534428956792-c441e5d79e4a?w=560&q=80" alt="Whitening"/>
+          <img class="service-card-img" src="https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=560&q=80" alt="Surgical Extraction"/>
+          <div class="service-card-body">
+            <div class="service-card-name">Surgical Extraction</div>
+            <div class="service-card-desc">Complex extractions including impacted wisdom teeth, performed with precision and care.</div>
+          </div>
+        </div>
+        <div class="service-card">
+          <img class="service-card-img" src="https://images.unsplash.com/photo-1606265752439-1f18756aa5fc?w=560&q=80" alt="Dentures"/>
+          <div class="service-card-body">
+            <div class="service-card-name">Dentures</div>
+            <div class="service-card-desc">Custom-fitted full and partial dentures crafted for comfort, function, and a natural look.</div>
+          </div>
+        </div>
+        <div class="service-card">
+          <img class="service-card-img" src="https://images.unsplash.com/photo-1606265752439-1f18756aa5fc?w=560&q=80" alt="Porcelain Crown &amp; Bridge"/>
+          <div class="service-card-body">
+            <div class="service-card-name">Porcelain Crown &amp; Bridge</div>
+            <div class="service-card-desc">High-quality dental porcelain crowns and bridges for strength and a natural appearance.</div>
+          </div>
+        </div>
+        <div class="service-card">
+          <img class="service-card-img" src="https://images.unsplash.com/photo-1629909615957-be38d48fbbe4?w=560&q=80" alt="Root Canal Treatment"/>
+          <div class="service-card-body">
+            <div class="service-card-name">Root Canal Treatment</div>
+            <div class="service-card-desc">Save your natural tooth with expert endodontic treatment — more comfortable than you'd expect.</div>
+          </div>
+        </div>
+        <div class="service-card">
+          <img class="service-card-img" src="https://images.unsplash.com/photo-1534428956792-c441e5d79e4a?w=560&q=80" alt="Teeth Whitening"/>
           <div class="service-card-body">
             <div class="service-card-name">Teeth Whitening</div>
             <div class="service-card-desc">Professional-grade whitening treatments that deliver dramatic results safely and quickly.</div>
           </div>
         </div>
         <div class="service-card">
-          <img class="service-card-img" src="https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=560&q=80" alt="Emergency"/>
+          <img class="service-card-img" src="https://images.unsplash.com/photo-1588776814546-1ffcf47267a5?w=560&q=80" alt="Periodontal Surgery"/>
           <div class="service-card-body">
-            <div class="service-card-name">Emergency Care</div>
-            <div class="service-card-desc">Urgent dental emergencies seen same-day. Call or use Maya, our AI, anytime 24/7.</div>
-          </div>
-          <div class="service-card-footer">
-            <span class="service-card-price">Call Immediately</span>
-            <span class="service-card-arrow">&#8594;</span>
+            <div class="service-card-name">Periodontal Surgery</div>
+            <div class="service-card-desc">Advanced gum treatments to address periodontal disease and restore oral health.</div>
           </div>
         </div>
       </div>
@@ -1010,11 +1092,11 @@ footer {
       <img
         class="about-photo"
         src="https://images.unsplash.com/photo-1537368910025-700350fe46c7?w=700&q=85"
-        alt="Dr. Brown — Lead Dentist"
+        alt="Dr. Duffus — Dental Surgeon"
       />
       <div class="about-photo-caption">
-        <div class="about-photo-name">Dr. Brown</div>
-        <div class="about-photo-role">Lead Dentist &amp; Founder</div>
+        <div class="about-photo-name">Dr. Rawlin Duffus</div>
+        <div class="about-photo-role">Dental Surgeon &amp; Founder</div>
       </div>
     </div>
     <div class="about-text">
@@ -1022,12 +1104,16 @@ footer {
         <div class="section-eyebrow-line"></div>
         <span class="section-eyebrow-text">About Us</span>
       </div>
-      <h2 class="section-title">Care You Can Trust,<br/>Every Visit</h2>
-      <p class="section-sub">Kingston Smile Dental was built on a simple belief — great dental care should feel comfortable, not clinical. We combine modern techniques with genuine Jamaican hospitality.</p>
+      <h2 class="section-title">Accessible Care<br/>for Every Family</h2>
+      <p class="section-sub">Canaan Dental Care is a professional dental team under the vision to provide all dental treatments for all your dental needs — with easy access for special needs patients and a friendly environment for everyone.</p>
       <ul class="about-list" style="margin-top:8px;">
         <li>
           <div class="about-list-check"><svg viewBox="0 0 12 12" fill="none" stroke-width="2.5"><polyline points="2,6 5,9 10,3"/></svg></div>
-          State-of-the-art digital X-ray equipment for precise diagnosis
+          #1 accessible dental clinic — wheelchair and disability friendly
+        </li>
+        <li>
+          <div class="about-list-check"><svg viewBox="0 0 12 12" fill="none" stroke-width="2.5"><polyline points="2,6 5,9 10,3"/></svg></div>
+          Full range of 9+ dental services under one roof
         </li>
         <li>
           <div class="about-list-check"><svg viewBox="0 0 12 12" fill="none" stroke-width="2.5"><polyline points="2,6 5,9 10,3"/></svg></div>
@@ -1035,11 +1121,7 @@ footer {
         </li>
         <li>
           <div class="about-list-check"><svg viewBox="0 0 12 12" fill="none" stroke-width="2.5"><polyline points="2,6 5,9 10,3"/></svg></div>
-          Flexible payment plans and most insurance accepted
-        </li>
-        <li>
-          <div class="about-list-check"><svg viewBox="0 0 12 12" fill="none" stroke-width="2.5"><polyline points="2,6 5,9 10,3"/></svg></div>
-          Emergency appointments available same day
+          Conveniently located at Ocean Village Shopping Centre
         </li>
         <li>
           <div class="about-list-check"><svg viewBox="0 0 12 12" fill="none" stroke-width="2.5"><polyline points="2,6 5,9 10,3"/></svg></div>
@@ -1047,7 +1129,7 @@ footer {
         </li>
         <li>
           <div class="about-list-check"><svg viewBox="0 0 12 12" fill="none" stroke-width="2.5"><polyline points="2,6 5,9 10,3"/></svg></div>
-          Serving Kingston families for over 15 years
+          Family dentistry — adults and children welcome
         </li>
       </ul>
     </div>
@@ -1065,7 +1147,7 @@ footer {
         </div>
         <h2 class="section-title">A Space Designed<br/>for Comfort</h2>
       </div>
-      <p class="section-sub" style="max-width:340px;">Take a look inside Kingston Smile Dental — modern facilities built to put you at ease.</p>
+      <p class="section-sub" style="max-width:340px;">Take a look inside Canaan Dental Care — modern facilities built to put you at ease.</p>
     </div>
     <div id="photo-grid">
       <div class="gallery-placeholder">
@@ -1082,7 +1164,7 @@ footer {
       <div class="section-eyebrow-line"></div>
       <span class="section-eyebrow-text">Find Us</span>
     </div>
-    <h2 class="section-title" style="color:var(--white)">Visit Kingston<br/>Smile Dental</h2>
+    <h2 class="section-title" style="color:var(--white)">Visit Canaan<br/>Dental Care</h2>
     <div class="location-grid">
       <div>
         <div class="info-item">
@@ -1091,7 +1173,7 @@ footer {
           </div>
           <div>
             <div class="info-label">Address</div>
-            <div class="info-value">Kingston Smile Dental<br/>Kingston, Jamaica</div>
+            <div class="info-value">Canaan Dental Care Ltd<br/>Shop #60, Ocean Village Shopping Centre<br/>Ocho Rios, St. Ann, Jamaica</div>
           </div>
         </div>
         <div class="info-item">
@@ -1109,7 +1191,7 @@ footer {
           </div>
           <div>
             <div class="info-label">Phone</div>
-            <div class="info-value">Call or use Maya our AI receptionist<br/>available 24/7 for bookings</div>
+            <div class="info-value">Call: <a href="tel:+18766790024" style="color:rgba(255,255,255,0.7);text-decoration:none;">(876) 679-0024</a><br/>WhatsApp: <a href="https://wa.me/18768718796" style="color:rgba(255,255,255,0.7);text-decoration:none;">(876) 871-8796</a></div>
           </div>
         </div>
         <div class="info-item">
@@ -1121,7 +1203,7 @@ footer {
             <div class="info-value">Cash, credit/debit cards accepted<br/>Most insurance plans welcome</div>
           </div>
         </div>
-        <a href="https://maps.google.com?q=Kingston+Smile+Dental+Kingston+Jamaica" target="_blank" class="map-btn">
+        <a href="https://maps.google.com?q=Ocean+Village+Shopping+Centre+Ocho+Rios+St+Ann+Jamaica" target="_blank" class="map-btn">
           Open in Google Maps
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg>
         </a>
@@ -1163,15 +1245,16 @@ footer {
               <label for="b-service">Service Needed *</label>
               <select id="b-service" required>
                 <option value="">Select a service</option>
-                <option value="cleaning">Cleaning &amp; Hygiene</option>
-                <option value="checkup">Dental Checkup</option>
-                <option value="filling">Filling / Restoration</option>
-                <option value="crown">Crown / Bridge</option>
-                <option value="extraction">Tooth Extraction</option>
+                <option value="cleaning">Dental Cleaning</option>
+                <option value="filling">Dental Filling</option>
+                <option value="x-ray">Dental X-rays</option>
+                <option value="extraction">Dental Extraction</option>
+                <option value="surgical_extraction">Surgical Extraction</option>
+                <option value="dentures">Dentures</option>
+                <option value="crown_bridge">Porcelain Crown &amp; Bridge</option>
+                <option value="root_canal">Root Canal Treatment</option>
                 <option value="whitening">Teeth Whitening</option>
-                <option value="root_canal">Root Canal</option>
-                <option value="x-ray">X-Ray</option>
-                <option value="emergency">Emergency</option>
+                <option value="periodontal">Periodontal Surgery</option>
                 <option value="consultation">General Consultation</option>
               </select>
             </div>
@@ -1209,7 +1292,7 @@ footer {
           </div>
           <div class="form-group">
             <label for="b-notes">Notes / Special Requests</label>
-            <textarea id="b-notes" placeholder="Any concerns, allergies, or notes for Dr. Brown…"></textarea>
+            <textarea id="b-notes" placeholder="Any concerns, allergies, or notes for Dr. Duffus…"></textarea>
           </div>
           <button type="submit" class="form-submit" id="book-btn">Request Appointment &rarr;</button>
         </form>
@@ -1219,7 +1302,7 @@ footer {
           <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
         </div>
         <div class="success-title">Request Received</div>
-        <p class="success-sub">Thank you. We'll confirm your appointment shortly.<br/>Dr. Brown's team will be in touch at your number.</p>
+        <p class="success-sub">Thank you. We'll confirm your appointment shortly.<br/>Dr. Duffus's team will be in touch at your number.</p>
         <br/><br/>
         <a href="#" onclick="location.reload()" class="btn-primary" style="display:inline-flex;color:var(--ink);">Book Another &rarr;</a>
       </div>
@@ -1235,9 +1318,9 @@ footer {
         <div class="footer-logo-mark">
           <img src="https://cdn-icons-png.flaticon.com/512/2913/2913465.png" alt="tooth"/>
         </div>
-        <span class="footer-logo-text">Kingston Smile Dental</span>
+        <span class="footer-logo-text">Canaan Dental Care</span>
       </div>
-      <p class="footer-desc">Expert dental care delivered with warmth and Jamaican hospitality. Serving Kingston families for over 15 years.</p>
+      <p class="footer-desc">Professional dental care for the whole family. Accessible, affordable, and delivered in a friendly environment. Ocho Rios, St. Ann.</p>
       <div class="footer-social">
         <!-- Facebook -->
         <a href="#" class="social-btn" aria-label="Facebook">
@@ -1246,7 +1329,7 @@ footer {
           </svg>
         </a>
         <!-- Instagram -->
-        <a href="#" class="social-btn" aria-label="Instagram">
+        <a href="https://www.instagram.com/canaandentalcare/" target="_blank" class="social-btn" aria-label="Instagram">
           <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
             <defs>
               <radialGradient id="ig-grad" r="150%" cx="30%" cy="107%">
@@ -1261,7 +1344,7 @@ footer {
           </svg>
         </a>
         <!-- WhatsApp -->
-        <a href="#" class="social-btn" aria-label="WhatsApp">
+        <a href="https://wa.me/18768718796" target="_blank" class="social-btn" aria-label="WhatsApp">
           <svg viewBox="0 0 24 24" fill="#25D366" xmlns="http://www.w3.org/2000/svg">
             <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
           </svg>
@@ -1271,11 +1354,11 @@ footer {
     <div class="footer-col">
       <h4>Services</h4>
       <a href="#services">Cleaning</a>
-      <a href="#services">Checkups</a>
       <a href="#services">Fillings</a>
-      <a href="#services">Crowns</a>
+      <a href="#services">Extractions</a>
+      <a href="#services">Dentures</a>
+      <a href="#services">Crowns &amp; Bridges</a>
       <a href="#services">Whitening</a>
-      <a href="#services">Emergency</a>
     </div>
     <div class="footer-col">
       <h4>Hours</h4>
@@ -1286,8 +1369,8 @@ footer {
     </div>
   </div>
   <div class="footer-bottom">
-    <span>&copy; 2026 Kingston Smile Dental. All rights reserved.</span>
-    <span>Kingston, Jamaica</span>
+    <span>&copy; 2026 Canaan Dental Care Ltd. All rights reserved.</span>
+    <span>Ocho Rios, St. Ann, Jamaica</span>
   </div>
 </footer>
 
@@ -1305,7 +1388,7 @@ footer {
       <button class="chat-close" onclick="toggleChat()">&#10005;</button>
     </div>
     <div class="chat-messages" id="chat-messages">
-      <div class="msg msg-ai">Good day! I'm Maya, the AI receptionist at Kingston Smile Dental. How can I help you today? I can book appointments, check availability, or answer questions.</div>
+      <div class="msg msg-ai">Good day! I'm Maya, the AI receptionist at Canaan Dental Care. How can I help you today? I can book appointments, check availability, or answer questions about our services.</div>
     </div>
     <div class="chat-input-row">
       <input type="text" class="chat-input" id="chat-input" placeholder="Type a message…" onkeydown="if(event.key==='Enter')sendChat()"/>
@@ -1357,12 +1440,16 @@ footer {
         body: JSON.stringify({
           model: 'claude-sonnet-4-6',
           max_tokens: 1000,
-          system: `You are Maya, the friendly AI receptionist at Kingston Smile Dental in Kingston, Jamaica. 
+          system: `You are Maya, the friendly AI receptionist at Canaan Dental Care Ltd in Ocho Rios, St. Ann, Jamaica. 
 You help patients with booking appointments, checking availability, answering questions about services, hours, and location. 
 Be warm, professional, and brief (1-3 sentences). 
+Location: Shop #60, Ocean Village Shopping Centre, Ocho Rios, St. Ann.
+Phone: (876) 679-0024. WhatsApp: (876) 871-8796.
+Led by Dr. Rawlin Duffus, Dental Surgeon.
+The clinic is the #1 accessible dental clinic — wheelchair and disability friendly.
 Hours: Mon-Fri 8am-5pm, Sat 9am-1pm, closed Sunday.
-Services: cleaning, checkup, filling, crown, extraction, whitening, root canal, x-ray, emergency.
-For actual bookings, direct them to the booking form on the page or to call. Never confirm bookings through this chat.`,
+Services: dental cleaning, dental filling, dental x-rays, dental extraction, surgical extraction, dentures, porcelain crown & bridge, root canal treatment, teeth whitening, periodontal surgery.
+For actual bookings, direct them to the booking form on the page or to call/WhatsApp. Never confirm bookings through this chat.`,
           messages: chatHistory
         })
       });
