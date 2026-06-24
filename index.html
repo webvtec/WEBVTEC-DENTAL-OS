@@ -1109,6 +1109,13 @@ footer {
   }
 }
 </style>
+<script>
+  // Force page to start at top on every load, ignore any URL hash
+  if (window.location.hash) {
+    history.replaceState(null, '', window.location.pathname);
+  }
+  window.scrollTo(0, 0);
+</script>
 </head>
 <body>
 
@@ -1149,7 +1156,7 @@ footer {
     <div class="hero-left">
       <div class="hero-eyebrow">
         <div class="hero-eyebrow-line"></div>
-        <span class="hero-eyebrow-text">Ocho Rios, St. Ann</span>
+        <span class="hero-eyebrow-text">📍Ocean Village Shopping Centre, Shop #60, Ocho Ríos, St. Ann</span>
       </div>
       <h1>Changing <em>Smiles</em><br/>Everyday</h1>
       <p class="hero-sub">Complete dental care for the whole family — from routine cleanings to advanced surgery. Jamaica's #1 accessible clinic, right in the heart of Ocho Rios.</p>
@@ -1158,7 +1165,7 @@ footer {
           Book Appointment
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
         </a>
-        <a href="https://maps.google.com?q=Ocean+Village+Shopping+Centre+Ocho+Rios+St+Ann+Jamaica" target="_blank" class="btn-ghost">
+        <a href="https://maps.app.goo.gl/M6Uo3eEMrpYhunFs5" target="_blank" class="btn-ghost">
           Find Us Now
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 110-5 2.5 2.5 0 010 5z"/></svg>
         </a>
