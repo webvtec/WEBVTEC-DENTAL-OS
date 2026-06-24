@@ -35,23 +35,37 @@
   window._listAll = listAll;
   window._getDownloadURL = getDownloadURL;
 
+  const fallbackPhotos = [
+    'https://images.pexels.com/photos/3845810/pexels-photo-3845810.jpeg?auto=compress&cs=tinysrgb&w=800',
+    'https://images.pexels.com/photos/3881449/pexels-photo-3881449.jpeg?auto=compress&cs=tinysrgb&w=800',
+    'https://images.pexels.com/photos/3952003/pexels-photo-3952003.jpeg?auto=compress&cs=tinysrgb&w=800',
+    'https://images.pexels.com/photos/3845653/pexels-photo-3845653.jpeg?auto=compress&cs=tinysrgb&w=800',
+    'https://images.pexels.com/photos/6528862/pexels-photo-6528862.jpeg?auto=compress&cs=tinysrgb&w=800',
+    'https://images.pexels.com/photos/5622271/pexels-photo-5622271.jpeg?auto=compress&cs=tinysrgb&w=800'
+  ];
+
+  function renderGallery(urls) {
+    const grid = document.getElementById('photo-grid');
+    grid.innerHTML = urls.map(url => `
+      <div class="photo-card">
+        <img src="${url}" alt="Canaan Dental Care" loading="lazy"/>
+      </div>
+    `).join('');
+  }
+
   async function loadGallery() {
     try {
       const galleryRef = ref(storage, 'gallery/');
       const result = await listAll(galleryRef);
       const urls = await Promise.all(result.items.map(item => getDownloadURL(item)));
-      const grid = document.getElementById('photo-grid');
       if (urls.length === 0) {
-        grid.innerHTML = `<div class="gallery-placeholder"><p>Photos coming soon</p></div>`;
+        renderGallery(fallbackPhotos);
         return;
       }
-      grid.innerHTML = urls.map(url => `
-        <div class="photo-card">
-          <img src="${url}" alt="Canaan Dental Care" loading="lazy"/>
-        </div>
-      `).join('');
+      renderGallery(urls);
     } catch(e) {
       console.log('Gallery load:', e.message);
+      renderGallery(fallbackPhotos);
     }
   }
 
@@ -132,13 +146,15 @@ nav {
   display: flex; align-items: center; gap: 14px; text-decoration: none;
 }
 .nav-logo-mark {
-  width: 38px; height: 38px;
+  width: 42px; height: 42px;
   border: 1px solid rgba(212,168,75,0.5);
+  border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
   position: relative;
+  overflow: hidden;
 }
 .nav-logo-mark img {
-  width: 22px; height: 22px; object-fit: contain; filter: brightness(0) invert(1) sepia(1) saturate(3) hue-rotate(10deg) brightness(0.9);
+  width: 100%; height: 100%; object-fit: cover;
 }
 .nav-logo-text {
   color: var(--white);
@@ -912,10 +928,12 @@ footer {
   display: flex; align-items: center; gap: 14px; margin-bottom: 18px;
 }
 .footer-logo-mark {
-  width: 34px; height: 34px; border: 1px solid var(--gold);
+  width: 38px; height: 38px; border: 1px solid var(--gold);
+  border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
 }
-.footer-logo-mark img { width: 18px; height: 18px; object-fit: contain; filter: brightness(0) invert(1); }
+.footer-logo-mark img { width: 100%; height: 100%; object-fit: cover; }
 .footer-logo-text {
   font-family: 'DM Serif Display', serif;
   color: var(--white); font-size: 1rem;
@@ -1098,7 +1116,7 @@ footer {
 <nav>
   <a href="#" class="nav-logo">
     <div class="nav-logo-mark">
-      <img src="https://cdn-icons-png.flaticon.com/512/2913/2913465.png" alt="tooth"/>
+      <img src="https://firebasestorage.googleapis.com/v0/b/webv-tec-dental-os.firebasestorage.app/o/482087734_1729257477654551_5700087455066637051_n.jpg?alt=media&token=5811600e-c46f-4ad9-8363-756740330223" alt="Canaan Dental Care Logo"/>
     </div>
     <span class="nav-logo-text">Canaan Dental Care</span>
   </a>
@@ -1198,7 +1216,7 @@ footer {
           </div>
         </div>
         <div class="service-card">
-          <img class="service-card-img" src="https://images.unsplash.com/photo-1654929960351-c1b7c1d5d33c?w=600&h=400&fit=crop&q=80" alt="Dental X-rays"/>
+          <img class="service-card-img" src="https://images.pexels.com/photos/6502019/pexels-photo-6502019.jpeg?auto=compress&cs=tinysrgb&w=600&h=400&fit=crop" alt="Dental X-rays"/>
           <div class="service-card-body">
             <div class="service-card-name">Dental X-rays</div>
             <div class="service-card-desc">Digital X-ray imaging for accurate diagnosis and personalised treatment planning.</div>
@@ -1219,7 +1237,7 @@ footer {
           </div>
         </div>
         <div class="service-card">
-          <img class="service-card-img" src="https://images.unsplash.com/photo-1581585504100-92cba9b36e0b?w=600&h=400&fit=crop&q=80" alt="Dentures"/>
+          <img class="service-card-img" src="https://images.pexels.com/photos/6502307/pexels-photo-6502307.jpeg?auto=compress&cs=tinysrgb&w=600&h=400&fit=crop" alt="Dentures"/>
           <div class="service-card-body">
             <div class="service-card-name">Dentures</div>
             <div class="service-card-desc">Custom-fitted full and partial dentures crafted for comfort, function, and a natural look.</div>
@@ -1240,7 +1258,7 @@ footer {
           </div>
         </div>
         <div class="service-card">
-          <img class="service-card-img" src="https://images.unsplash.com/photo-1534428956792-c441e5d79e4a?w=600&h=400&fit=crop&q=80" alt="Teeth Whitening"/>
+          <img class="service-card-img" src="https://images.pexels.com/photos/6627284/pexels-photo-6627284.jpeg?auto=compress&cs=tinysrgb&w=600&h=400&fit=crop" alt="Teeth Whitening"/>
           <div class="service-card-body">
             <div class="service-card-name">Teeth Whitening</div>
             <div class="service-card-desc">Professional-grade whitening treatments that deliver dramatic results safely and quickly.</div>
@@ -1324,8 +1342,23 @@ footer {
       <p class="section-sub" style="max-width:340px;">Take a look inside Canaan Dental Care — modern facilities built to put you at ease.</p>
     </div>
     <div id="photo-grid" class="reveal-stagger">
-      <div class="gallery-placeholder">
-        <p>Our practice photos are coming soon&hellip;</p>
+      <div class="photo-card">
+        <img src="https://images.pexels.com/photos/3845810/pexels-photo-3845810.jpeg?auto=compress&cs=tinysrgb&w=800" alt="Canaan Dental Care" loading="lazy"/>
+      </div>
+      <div class="photo-card">
+        <img src="https://images.pexels.com/photos/3881449/pexels-photo-3881449.jpeg?auto=compress&cs=tinysrgb&w=800" alt="Canaan Dental Care" loading="lazy"/>
+      </div>
+      <div class="photo-card">
+        <img src="https://images.pexels.com/photos/3952003/pexels-photo-3952003.jpeg?auto=compress&cs=tinysrgb&w=800" alt="Canaan Dental Care" loading="lazy"/>
+      </div>
+      <div class="photo-card">
+        <img src="https://images.pexels.com/photos/3845653/pexels-photo-3845653.jpeg?auto=compress&cs=tinysrgb&w=800" alt="Canaan Dental Care" loading="lazy"/>
+      </div>
+      <div class="photo-card">
+        <img src="https://images.pexels.com/photos/6528862/pexels-photo-6528862.jpeg?auto=compress&cs=tinysrgb&w=800" alt="Canaan Dental Care" loading="lazy"/>
+      </div>
+      <div class="photo-card">
+        <img src="https://images.pexels.com/photos/5622271/pexels-photo-5622271.jpeg?auto=compress&cs=tinysrgb&w=800" alt="Canaan Dental Care" loading="lazy"/>
       </div>
     </div>
   </div>
@@ -1498,7 +1531,7 @@ footer {
     <div>
       <div class="footer-logo-line">
         <div class="footer-logo-mark">
-          <img src="https://cdn-icons-png.flaticon.com/512/2913/2913465.png" alt="tooth"/>
+          <img src="https://firebasestorage.googleapis.com/v0/b/webv-tec-dental-os.firebasestorage.app/o/482087734_1729257477654551_5700087455066637051_n.jpg?alt=media&token=5811600e-c46f-4ad9-8363-756740330223" alt="Canaan Dental Care Logo"/>
         </div>
         <span class="footer-logo-text">Canaan Dental Care</span>
       </div>
